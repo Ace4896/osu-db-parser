@@ -8,9 +8,39 @@ use time::{macros::datetime, Duration, OffsetDateTime};
 
 pub type OsuString = Option<String>;
 
+/// Represents the different gameplay modes for a beatmap.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GameplayMode {
+    Standard = 0,
+    Taiko = 1,
+    Catch = 2,
+    Mania = 3,
+}
+
 /// Parses a boolean value in osu!'s database file formats.
 pub fn boolean(input: &[u8]) -> IResult<&[u8], bool> {
     map(u8, |byte| byte != 0)(input)
+}
+
+/// Parses a gameplay mode value.
+pub fn gameplay_mode(input: &[u8]) -> IResult<&[u8], GameplayMode> {
+    use GameplayMode::*;
+
+    let (i, status) = u8(input)?;
+    let status = match status {
+        0 => Standard,
+        1 => Taiko,
+        2 => Catch,
+        3 => Mania,
+        _ => {
+            return Err(nom::Err::Error(nom::error::Error {
+                input,
+                code: nom::error::ErrorKind::Switch,
+            }))
+        }
+    };
+
+    Ok((i, status))
 }
 
 /// Decodes a ULEB128 value into an unsigned 64-bit integer.
@@ -81,6 +111,24 @@ mod tests {
         assert_eq!(
             boolean(&[0xFF, 0x01, 0x02]),
             Ok(((&[0x01, 0x02][..]), true))
+        );
+    }
+
+    #[test]
+    fn gameplay_mode_decoding_works() {
+        use GameplayMode::*;
+
+        assert_eq!(gameplay_mode(&[0]), Ok((&[][..], Standard)));
+        assert_eq!(gameplay_mode(&[1]), Ok((&[][..], Taiko)));
+        assert_eq!(gameplay_mode(&[2]), Ok((&[][..], Catch)));
+        assert_eq!(gameplay_mode(&[3]), Ok((&[][..], Mania)));
+
+        assert_eq!(
+            gameplay_mode(&[10]),
+            Err(nom::Err::Error(nom::error::Error {
+                input: &[10][..],
+                code: nom::error::ErrorKind::Switch
+            }))
         );
     }
 

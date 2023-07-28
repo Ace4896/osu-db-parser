@@ -10,7 +10,9 @@ use nom::{
 };
 use time::OffsetDateTime;
 
-use crate::common::{boolean, osu_string, windows_datetime, OsuString};
+use crate::common::{
+    boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, OsuString,
+};
 
 // TODO: A couple of fields could be represented with more meaningful structs/enums
 
@@ -215,15 +217,6 @@ pub enum RankedStatus {
     Loved = 7,
 }
 
-/// Represents the different gameplay modes for a beatmap.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum GameplayMode {
-    Standard = 0,
-    Taiko = 1,
-    Catch = 2,
-    Mania = 3,
-}
-
 /// Represents a timing point found in `osu.db`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TimingPoint {
@@ -419,27 +412,6 @@ fn ranked_status(input: &[u8]) -> IResult<&[u8], RankedStatus> {
     Ok((i, status))
 }
 
-/// Parses a gameplay mode value.
-fn gameplay_mode(input: &[u8]) -> IResult<&[u8], GameplayMode> {
-    use GameplayMode::*;
-
-    let (i, status) = u8(input)?;
-    let status = match status {
-        0 => Standard,
-        1 => Taiko,
-        2 => Catch,
-        3 => Mania,
-        _ => {
-            return Err(nom::Err::Error(nom::error::Error {
-                input,
-                code: nom::error::ErrorKind::Switch,
-            }))
-        }
-    };
-
-    Ok((i, status))
-}
-
 /// Parses a integer-double pair found in `osu.db`.
 fn int_double_pair(input: &[u8]) -> IResult<&[u8], (u32, f64)> {
     let (i, int) = preceded(tag(&[0x08]), le_u32)(input)?;
@@ -483,24 +455,6 @@ pub mod tests {
 
         assert_eq!(
             ranked_status(&[10]),
-            Err(nom::Err::Error(nom::error::Error {
-                input: &[10][..],
-                code: nom::error::ErrorKind::Switch
-            }))
-        );
-    }
-
-    #[test]
-    fn gameplay_mode_decoding_works() {
-        use GameplayMode::*;
-
-        assert_eq!(gameplay_mode(&[0]), Ok((&[][..], Standard)));
-        assert_eq!(gameplay_mode(&[1]), Ok((&[][..], Taiko)));
-        assert_eq!(gameplay_mode(&[2]), Ok((&[][..], Catch)));
-        assert_eq!(gameplay_mode(&[3]), Ok((&[][..], Mania)));
-
-        assert_eq!(
-            gameplay_mode(&[10]),
             Err(nom::Err::Error(nom::error::Error {
                 input: &[10][..],
                 code: nom::error::ErrorKind::Switch
