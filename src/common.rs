@@ -70,6 +70,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn boolean_decoding_works() {
+        // Any non-zero byte should result in true
+        assert_eq!(boolean(&[0x00]), Ok(((&[][..]), false)));
+        assert_eq!(boolean(&[0x01]), Ok(((&[][..]), true)));
+
+        assert_eq!(
+            boolean(&[0xFF, 0x01, 0x02]),
+            Ok(((&[0x01, 0x02][..]), true))
+        );
+    }
+
+    #[test]
     fn uleb128_decoding_works() {
         // 0xE5, 0x8E, 0x26 ==> 624485
         // ULEB128 value by itself
