@@ -1,2 +1,2 @@
+mod beatmaps;
 mod common;
-mod osu;
