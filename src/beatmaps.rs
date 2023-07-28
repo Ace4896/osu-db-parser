@@ -272,12 +272,7 @@ fn beatmap_entry<'a>(version: u32) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], Bea
     };
 
     move |input| {
-        let (rest, size) = if version < 20191106 {
-            map(le_u32, |s| Some(s))(input)?
-        } else {
-            (input, None)
-        };
-
+        let (rest, size) = cond(version < 20191106, le_u32)(input)?;
         let (rest, artist_name) = osu_string(rest)?;
         let (rest, artist_name_unicode) = osu_string(rest)?;
         let (rest, song_title) = osu_string(rest)?;
@@ -287,8 +282,8 @@ fn beatmap_entry<'a>(version: u32) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], Bea
         let (rest, audio_filename) = osu_string(rest)?;
         let (rest, md5) = osu_string(rest)?;
         let (rest, beatmap_filename) = osu_string(rest)?;
-        let (rest, ranked_status) = ranked_status(rest)?;
 
+        let (rest, ranked_status) = ranked_status(rest)?;
         let (rest, hitcircle_count) = le_u16(rest)?;
         let (rest, slider_count) = le_u16(rest)?;
         let (rest, spinner_count) = le_u16(rest)?;
@@ -298,8 +293,8 @@ fn beatmap_entry<'a>(version: u32) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], Bea
         let (rest, hp_drain) = parse_difficulty(rest)?;
         let (rest, overall_difficulty) = parse_difficulty(rest)?;
         let (rest, slider_velocity) = le_f64(rest)?;
-        let (rest, star_ratings_std) = star_ratings(rest)?;
 
+        let (rest, star_ratings_std) = star_ratings(rest)?;
         let (rest, star_ratings_taiko) = star_ratings(rest)?;
         let (rest, star_ratings_ctb) = star_ratings(rest)?;
         let (rest, star_ratings_mania) = star_ratings(rest)?;
