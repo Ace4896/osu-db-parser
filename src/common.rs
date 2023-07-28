@@ -6,7 +6,7 @@ use nom::{
 };
 use time::{macros::datetime, Duration, OffsetDateTime};
 
-pub type OsuStr = Option<String>;
+pub type OsuString = Option<String>;
 
 /// Parses a boolean value in osu!'s database file formats.
 pub fn boolean(input: &[u8]) -> IResult<&[u8], bool> {
@@ -39,7 +39,7 @@ pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
 ///
 /// - `0x00` => Empty string marker; output is `None`
 /// - `0x0b, 0x00` => Zero length string; output is `Some("")`
-pub fn osu_string(input: &[u8]) -> IResult<&[u8], OsuStr> {
+pub fn osu_string(input: &[u8]) -> IResult<&[u8], OsuString> {
     let (i, head) = u8(input)?;
 
     match head {
@@ -123,7 +123,10 @@ mod tests {
         test_string_bytes.push(0x03);
 
         assert_eq!(osu_string(&empty), Ok((&[][..], None)));
-        assert_eq!(osu_string(&zero_length), Ok((&[][..], Some("".to_string()))));
+        assert_eq!(
+            osu_string(&zero_length),
+            Ok((&[][..], Some("".to_string())))
+        );
         assert_eq!(
             osu_string(&test_string_bytes),
             Ok((&[0x01, 0x02, 0x03][..], Some(test_string)))

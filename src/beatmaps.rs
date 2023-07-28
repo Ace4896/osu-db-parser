@@ -10,7 +10,7 @@ use nom::{
 };
 use time::OffsetDateTime;
 
-use crate::common::{boolean, osu_string, windows_datetime, OsuStr};
+use crate::common::{boolean, osu_string, windows_datetime, OsuString};
 
 // TODO: A couple of fields could be represented with more meaningful structs/enums
 
@@ -30,7 +30,7 @@ pub struct BeatmapListing {
     pub account_unlock_date: OffsetDateTime,
 
     /// Player name
-    pub player_name: OsuStr,
+    pub player_name: OsuString,
 
     /// Beatmaps
     pub beatmaps: Vec<BeatmapEntry>,
@@ -46,31 +46,31 @@ pub struct BeatmapEntry {
     pub size: Option<u32>,
 
     /// Artist name
-    pub artist_name: OsuStr,
+    pub artist_name: OsuString,
 
     /// Artist name, in Unicode
-    pub artist_name_unicode: OsuStr,
+    pub artist_name_unicode: OsuString,
 
     /// Song title
-    pub song_title: OsuStr,
+    pub song_title: OsuString,
 
     /// Song title, in Unicode
-    pub song_title_unicode: OsuStr,
+    pub song_title_unicode: OsuString,
 
     /// Creator name
-    pub creator_name: OsuStr,
+    pub creator_name: OsuString,
 
     /// Difficulty (e.g. Hard, Insane, etc.)
-    pub difficulty: OsuStr,
+    pub difficulty: OsuString,
 
     /// Audio file name
-    pub audio_filename: OsuStr,
+    pub audio_filename: OsuString,
 
     /// MD5 hash of the beatmap
-    pub md5: OsuStr,
+    pub md5: OsuString,
 
     /// Name of the .osu file corresponding to this beatmap
-    pub beatmap_filename: OsuStr,
+    pub beatmap_filename: OsuString,
 
     /// Ranked status (0 = unknown, 1 = unsubmitted, 2 = pending/wip/graveyard, 3 = unused, 4 = ranked, 5 = approved, 6 = qualified, 7 = loved)
     pub ranked_status: RankedStatus,
@@ -157,16 +157,16 @@ pub struct BeatmapEntry {
     pub gameplay_mode: GameplayMode,
 
     /// Song source
-    pub song_source: OsuStr,
+    pub song_source: OsuString,
 
     /// Song tags
-    pub song_tags: OsuStr,
+    pub song_tags: OsuString,
 
     /// Online offset
     pub online_offset: u16,
 
     /// Font used for the title of the song
-    pub font: OsuStr,
+    pub font: OsuString,
 
     /// Is beatmap unplayed
     pub is_unplayed: bool,
@@ -178,7 +178,7 @@ pub struct BeatmapEntry {
     pub is_osz2: bool,
 
     /// Folder name of the beatmap, relative to Songs folder
-    pub folder_name: OsuStr,
+    pub folder_name: OsuString,
 
     /// Last time when beatmap was checked against osu! repository
     pub last_checked_online: OffsetDateTime,

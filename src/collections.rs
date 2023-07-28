@@ -2,7 +2,7 @@
 
 use nom::{multi::length_count, number::complete::le_u32, IResult};
 
-use crate::common::{osu_string, OsuStr};
+use crate::common::{osu_string, OsuString};
 
 #[derive(Clone, Debug)]
 pub struct CollectionListing {
@@ -16,10 +16,10 @@ pub struct CollectionListing {
 #[derive(Clone, Debug)]
 pub struct Collection {
     /// Name of the collection
-    pub name: OsuStr,
+    pub name: OsuString,
 
     /// MD5 hashes of beatmaps in the collection
-    pub beatmap_md5s: Vec<OsuStr>,
+    pub beatmap_md5s: Vec<OsuString>,
 }
 
 /// Parses a `collection.db` file.
