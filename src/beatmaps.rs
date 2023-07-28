@@ -264,6 +264,7 @@ fn beatmap_listing(input: &[u8]) -> IResult<&[u8], BeatmapListing> {
     ))
 }
 
+/// Parses a beatmap entry in an `osu.db` file.
 fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry> {
     let parse_difficulty: fn(&[u8]) -> IResult<&[u8], f32> = if version < 20140609 {
         |i: &[u8]| map(u8, |b| b as f32)(i)
