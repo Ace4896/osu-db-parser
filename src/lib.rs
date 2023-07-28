@@ -1,2 +1,3 @@
-mod beatmaps;
 mod common;
+
+pub mod beatmaps;
