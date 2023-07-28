@@ -239,19 +239,19 @@ pub struct TimingPoint {
 
 /// Parses an `osu.db` file.
 fn beatmap_listing<'a>(input: &'a [u8]) -> IResult<&'a [u8], BeatmapListing<'a>> {
-    let (rest, version) = le_u32(input)?;
-    let (rest, folder_count) = le_u32(rest)?;
-    let (rest, account_unlocked) = boolean(rest)?;
-    let (rest, account_unlock_date) = windows_datetime(rest)?;
-    let (rest, player_name) = osu_string(rest)?;
+    let (i, version) = le_u32(input)?;
+    let (i, folder_count) = le_u32(i)?;
+    let (i, account_unlocked) = boolean(i)?;
+    let (i, account_unlock_date) = windows_datetime(i)?;
+    let (i, player_name) = osu_string(i)?;
 
-    let (rest, beatmap_count) = le_u32(rest)?;
-    let (rest, beatmaps) = count(beatmap_entry(version), beatmap_count as usize)(rest)?;
+    let (i, beatmap_count) = le_u32(i)?;
+    let (i, beatmaps) = count(beatmap_entry(version), beatmap_count as usize)(i)?;
 
-    let (rest, user_permissions) = le_u32(rest)?;
+    let (i, user_permissions) = le_u32(i)?;
 
     Ok((
-        rest,
+        i,
         BeatmapListing {
             version,
             folder_count,
@@ -272,75 +272,75 @@ fn beatmap_entry<'a>(version: u32) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], Bea
     };
 
     move |input| {
-        let (rest, size) = cond(version < 20191106, le_u32)(input)?;
-        let (rest, artist_name) = osu_string(rest)?;
-        let (rest, artist_name_unicode) = osu_string(rest)?;
-        let (rest, song_title) = osu_string(rest)?;
-        let (rest, song_title_unicode) = osu_string(rest)?;
-        let (rest, creator_name) = osu_string(rest)?;
-        let (rest, difficulty) = osu_string(rest)?;
-        let (rest, audio_filename) = osu_string(rest)?;
-        let (rest, md5) = osu_string(rest)?;
-        let (rest, beatmap_filename) = osu_string(rest)?;
+        let (i, size) = cond(version < 20191106, le_u32)(input)?;
+        let (i, artist_name) = osu_string(i)?;
+        let (i, artist_name_unicode) = osu_string(i)?;
+        let (i, song_title) = osu_string(i)?;
+        let (i, song_title_unicode) = osu_string(i)?;
+        let (i, creator_name) = osu_string(i)?;
+        let (i, difficulty) = osu_string(i)?;
+        let (i, audio_filename) = osu_string(i)?;
+        let (i, md5) = osu_string(i)?;
+        let (i, beatmap_filename) = osu_string(i)?;
 
-        let (rest, ranked_status) = ranked_status(rest)?;
-        let (rest, hitcircle_count) = le_u16(rest)?;
-        let (rest, slider_count) = le_u16(rest)?;
-        let (rest, spinner_count) = le_u16(rest)?;
-        let (rest, last_modification_time) = windows_datetime(rest)?;
-        let (rest, approach_rate) = parse_difficulty(rest)?;
-        let (rest, circle_size) = parse_difficulty(rest)?;
-        let (rest, hp_drain) = parse_difficulty(rest)?;
-        let (rest, overall_difficulty) = parse_difficulty(rest)?;
-        let (rest, slider_velocity) = le_f64(rest)?;
+        let (i, ranked_status) = ranked_status(i)?;
+        let (i, hitcircle_count) = le_u16(i)?;
+        let (i, slider_count) = le_u16(i)?;
+        let (i, spinner_count) = le_u16(i)?;
+        let (i, last_modification_time) = windows_datetime(i)?;
+        let (i, approach_rate) = parse_difficulty(i)?;
+        let (i, circle_size) = parse_difficulty(i)?;
+        let (i, hp_drain) = parse_difficulty(i)?;
+        let (i, overall_difficulty) = parse_difficulty(i)?;
+        let (i, slider_velocity) = le_f64(i)?;
 
-        let (rest, star_ratings_std) = star_ratings(rest)?;
-        let (rest, star_ratings_taiko) = star_ratings(rest)?;
-        let (rest, star_ratings_ctb) = star_ratings(rest)?;
-        let (rest, star_ratings_mania) = star_ratings(rest)?;
-        let (rest, drain_time) = le_u32(rest)?;
-        let (rest, total_time) = le_u32(rest)?;
-        let (rest, audio_preview_time) = le_u32(rest)?;
+        let (i, star_ratings_std) = star_ratings(i)?;
+        let (i, star_ratings_taiko) = star_ratings(i)?;
+        let (i, star_ratings_ctb) = star_ratings(i)?;
+        let (i, star_ratings_mania) = star_ratings(i)?;
+        let (i, drain_time) = le_u32(i)?;
+        let (i, total_time) = le_u32(i)?;
+        let (i, audio_preview_time) = le_u32(i)?;
 
-        let (rest, timing_point_count) = le_u32(rest)?;
-        let (rest, timing_points) = count(timing_point, timing_point_count as usize)(rest)?;
+        let (i, timing_point_count) = le_u32(i)?;
+        let (i, timing_points) = count(timing_point, timing_point_count as usize)(i)?;
 
-        let (rest, difficulty_id) = le_u32(rest)?;
-        let (rest, beatmap_id) = le_u32(rest)?;
-        let (rest, thread_id) = le_u32(rest)?;
-        let (rest, grade_std) = u8(rest)?;
-        let (rest, grade_taiko) = u8(rest)?;
-        let (rest, grade_catch) = u8(rest)?;
-        let (rest, grade_mania) = u8(rest)?;
-        let (rest, local_offset) = le_u16(rest)?;
-        let (rest, stack_leniency) = le_f32(rest)?;
-        let (rest, gameplay_mode) = gameplay_mode(rest)?;
+        let (i, difficulty_id) = le_u32(i)?;
+        let (i, beatmap_id) = le_u32(i)?;
+        let (i, thread_id) = le_u32(i)?;
+        let (i, grade_std) = u8(i)?;
+        let (i, grade_taiko) = u8(i)?;
+        let (i, grade_catch) = u8(i)?;
+        let (i, grade_mania) = u8(i)?;
+        let (i, local_offset) = le_u16(i)?;
+        let (i, stack_leniency) = le_f32(i)?;
+        let (i, gameplay_mode) = gameplay_mode(i)?;
 
-        let (rest, song_source) = osu_string(rest)?;
-        let (rest, song_tags) = osu_string(rest)?;
-        let (rest, online_offset) = le_u16(rest)?;
-        let (rest, font) = osu_string(rest)?;
-        let (rest, is_unplayed) = boolean(rest)?;
-        let (rest, last_played) = windows_datetime(rest)?;
-        let (rest, is_osz2) = boolean(rest)?;
-        let (rest, folder_name) = osu_string(rest)?;
-        let (rest, last_checked_online) = windows_datetime(rest)?;
-        let (rest, ignore_beatmap_hitsounds) = boolean(rest)?;
+        let (i, song_source) = osu_string(i)?;
+        let (i, song_tags) = osu_string(i)?;
+        let (i, online_offset) = le_u16(i)?;
+        let (i, font) = osu_string(i)?;
+        let (i, is_unplayed) = boolean(i)?;
+        let (i, last_played) = windows_datetime(i)?;
+        let (i, is_osz2) = boolean(i)?;
+        let (i, folder_name) = osu_string(i)?;
+        let (i, last_checked_online) = windows_datetime(i)?;
+        let (i, ignore_beatmap_hitsounds) = boolean(i)?;
 
-        let (rest, ignore_beatmap_skin) = boolean(rest)?;
-        let (rest, disable_storyboard) = boolean(rest)?;
-        let (rest, disable_video) = boolean(rest)?;
+        let (i, ignore_beatmap_skin) = boolean(i)?;
+        let (i, disable_storyboard) = boolean(i)?;
+        let (i, disable_video) = boolean(i)?;
 
         // NOTE: Unused f32 optional field, only present if version is less than 20140609
-        let (rest, _) = cond(version < 20140609, le_f32)(rest)?;
+        let (i, _) = cond(version < 20140609, le_f32)(i)?;
 
         // NOTE: Unused u32 field (appears to be last modification time as well)
-        let (rest, _) = le_u32(rest)?;
+        let (i, _) = le_u32(i)?;
 
-        let (rest, mania_scroll_speed) = u8(rest)?;
+        let (i, mania_scroll_speed) = u8(i)?;
 
         Ok((
-            rest,
+            i,
             BeatmapEntry {
                 size,
                 artist_name,
@@ -403,7 +403,7 @@ fn beatmap_entry<'a>(version: u32) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], Bea
 fn ranked_status(input: &[u8]) -> IResult<&[u8], RankedStatus> {
     use RankedStatus::*;
 
-    let (rest, status) = u8(input)?;
+    let (i, status) = u8(input)?;
     let status = match status {
         0 => Unknown,
         1 => Unsubmitted,
@@ -420,14 +420,14 @@ fn ranked_status(input: &[u8]) -> IResult<&[u8], RankedStatus> {
         }
     };
 
-    Ok((rest, status))
+    Ok((i, status))
 }
 
 /// Parses a gameplay mode value.
 fn gameplay_mode(input: &[u8]) -> IResult<&[u8], GameplayMode> {
     use GameplayMode::*;
 
-    let (rest, status) = u8(input)?;
+    let (i, status) = u8(input)?;
     let status = match status {
         0 => Standard,
         1 => Taiko,
@@ -441,15 +441,15 @@ fn gameplay_mode(input: &[u8]) -> IResult<&[u8], GameplayMode> {
         }
     };
 
-    Ok((rest, status))
+    Ok((i, status))
 }
 
 /// Parses a integer-double pair found in `osu.db`.
 fn int_double_pair(input: &[u8]) -> IResult<&[u8], (u32, f64)> {
-    let (rest, int) = preceded(tag(&[0x08]), le_u32)(input)?;
-    let (rest, double) = preceded(tag(&[0x0d]), le_f64)(rest)?;
+    let (i, int) = preceded(tag(&[0x08]), le_u32)(input)?;
+    let (i, double) = preceded(tag(&[0x0d]), le_f64)(i)?;
 
-    Ok((rest, (int, double)))
+    Ok((i, (int, double)))
 }
 
 /// Parses a timing point found in `osu.db`.
@@ -466,8 +466,8 @@ fn timing_point(input: &[u8]) -> IResult<&[u8], TimingPoint> {
 
 /// Parses a list of star ratings.
 fn star_ratings(input: &[u8]) -> IResult<&[u8], Vec<(u32, f64)>> {
-    let (rest, total) = le_u32(input)?;
-    count(int_double_pair, total as usize)(rest)
+    let (i, total) = le_u32(input)?;
+    count(int_double_pair, total as usize)(i)
 }
 
 #[cfg(test)]

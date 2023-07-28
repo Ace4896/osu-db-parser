@@ -15,8 +15,8 @@ pub fn boolean(input: &[u8]) -> IResult<&[u8], bool> {
 
 /// Decodes a ULEB128 value into an unsigned 64-bit integer.
 pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
-    let (rest, uleb_start) = take_while(|byte| byte & 0x80 > 1)(input)?;
-    let (rest, uleb_final) = u8(rest)?;
+    let (i, uleb_start) = take_while(|byte| byte & 0x80 > 1)(input)?;
+    let (i, uleb_final) = u8(i)?;
 
     let mut result = 0;
     let mut shift = 0;
@@ -27,7 +27,7 @@ pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
     }
 
     result |= ((uleb_final & 0x7F) as u64) << shift;
-    Ok((rest, result))
+    Ok((i, result))
 }
 
 /// Decodes a string found in osu!'s database file formats.
@@ -40,14 +40,14 @@ pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
 /// - `0x00` => Empty string marker; output is `None`
 /// - `0x0b, 0x00` => Zero length string; output is `Some("")`
 pub fn osu_string<'a>(input: &'a [u8]) -> IResult<&'a [u8], OsuStr<'a>> {
-    let (rest, head) = u8(input)?;
+    let (i, head) = u8(input)?;
 
     match head {
-        0x00 => Ok((rest, None)),
+        0x00 => Ok((i, None)),
         0x0b => {
-            let (rest, length) = uleb128(rest)?;
-            map_res(take(length), std::str::from_utf8)(rest)
-                .map(|(rest, string)| (rest, Some(string)))
+            let (i, length) = uleb128(i)?;
+            map_res(take(length), std::str::from_utf8)(i)
+                .map(|(i, string)| (i, Some(string)))
         }
         _ => fail(input),
     }
@@ -59,12 +59,12 @@ pub fn windows_datetime(input: &[u8]) -> IResult<&[u8], OffsetDateTime> {
 
     // In .NET, there are 10,000 ticks per millisecond
     // So 10 ticks / microsecond, 0.01 ticks per nanosecond
-    let (rest, ticks) = le_u64(input)?;
+    let (i, ticks) = le_u64(input)?;
     let result = WINDOWS_EPOCH
         + Duration::microseconds((ticks / 10) as i64)
         + Duration::nanoseconds(((ticks % 10) * 100) as i64);
 
-    Ok((rest, result))
+    Ok((i, result))
 }
 
 #[cfg(test)]
