@@ -1,10 +1,15 @@
 use nom::{
     bytes::complete::{take, take_while},
-    combinator::{fail, map_res},
+    combinator::{fail, map, map_res},
     number::complete::{le_u64, u8},
     IResult,
 };
 use time::{macros::datetime, Duration, OffsetDateTime};
+
+/// Parses a boolean value in osu!'s database file formats.
+pub fn boolean(input: &[u8]) -> IResult<&[u8], bool> {
+    map(u8, |byte| byte != 0)(input)
+}
 
 /// Decodes a ULEB128 value into an unsigned 64-bit integer.
 pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
