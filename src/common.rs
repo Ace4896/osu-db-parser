@@ -1,4 +1,10 @@
-use nom::{bytes::complete::take_while, number::complete::u8, IResult};
+use nom::{
+    bytes::complete::{take, take_while},
+    combinator::{fail, map_res},
+    number::complete::{le_u64, u8},
+    IResult,
+};
+use time::{macros::datetime, Duration, OffsetDateTime};
 
 /// Decodes a ULEB128 value into an unsigned 64-bit integer.
 pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
@@ -14,6 +20,43 @@ pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
     }
 
     result |= ((uleb_final & 0x7F) as u64) << shift;
+    Ok((rest, result))
+}
+
+/// Decodes a string found in osu!'s database file formats.
+///
+/// - If the first byte is 0x00, then no string value is present.
+/// - If the first byte is 0x0b, then this is followed by a ULEB128 value indicating the length, then the UTF-8 string bytes.
+///
+///  **NOTE**: There are two possible values for empty strings; these can be distinguished as follows:
+///
+/// - `0x00` => Empty string marker; output is `None`
+/// - `0x0b, 0x00` => Zero length string; output is `Some("")`
+pub fn string<'a>(input: &'a [u8]) -> IResult<&'a [u8], Option<&'a str>> {
+    let (rest, head) = u8(input)?;
+
+    match head {
+        0x00 => Ok((rest, None)),
+        0x0b => {
+            let (rest, length) = uleb128(rest)?;
+            map_res(take(length), std::str::from_utf8)(rest)
+                .map(|(rest, string)| (rest, Some(string)))
+        }
+        _ => fail(input),
+    }
+}
+
+/// Parses a DateTime from .NET's [`DateTime.Ticks`](https://learn.microsoft.com/en-us/dotnet/api/system.datetime.ticks?view=netframework-4.7.2).
+pub fn windows_datetime(input: &[u8]) -> IResult<&[u8], OffsetDateTime> {
+    const WINDOWS_EPOCH: OffsetDateTime = datetime!(0001-01-01 0:00 UTC);
+
+    // In .NET, there are 10,000 ticks per millisecond
+    // So 10 ticks / microsecond, 0.01 ticks per nanosecond
+    let (rest, ticks) = le_u64(input)?;
+    let result = WINDOWS_EPOCH
+        + Duration::microseconds((ticks / 10) as i64)
+        + Duration::nanoseconds(((ticks % 10) * 100) as i64);
+
     Ok((rest, result))
 }
 
@@ -40,6 +83,48 @@ mod tests {
                 input: &[][..],
                 code: nom::error::ErrorKind::Eof
             }))
+        );
+    }
+
+    #[test]
+    fn string_decoding_works() {
+        let empty = vec![0x00];
+        let zero_length = vec![0x0b, 0x00];
+        let test_string = "test";
+        let mut test_string_bytes = vec![0x0b, 0x04];
+
+        for byte in test_string.as_bytes() {
+            test_string_bytes.push(*byte);
+        }
+
+        // Append a few other bytes that aren't part of the string
+        test_string_bytes.push(0x01);
+        test_string_bytes.push(0x02);
+        test_string_bytes.push(0x03);
+
+        assert_eq!(string(&empty), Ok((&[][..], None)));
+        assert_eq!(string(&zero_length), Ok((&[][..], Some(""))));
+        assert_eq!(
+            string(&test_string_bytes),
+            Ok((&[0x01, 0x02, 0x03][..], Some(test_string)))
+        );
+    }
+
+    #[test]
+    fn windows_datetime_decoding_works() {
+        // 07/28/2023 15:30:20 +00:00 ==> 638261550200000000 ticks
+        let datetime = datetime!(2023-07-28 15:30:20 UTC);
+        let ticks = 638261550200000000u64;
+
+        // Should only parse the first 8 bytes
+        let mut input = ticks.to_le_bytes().to_vec();
+        input.push(0x01);
+        input.push(0x02);
+        input.push(0x03);
+
+        assert_eq!(
+            windows_datetime(&input),
+            Ok((&[0x01, 0x02, 0x03][..], datetime))
         );
     }
 }
