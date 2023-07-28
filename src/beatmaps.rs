@@ -16,7 +16,7 @@ use crate::common::{boolean, osu_string, windows_datetime, OsuStr};
 
 /// Represents the `osu.db` file.
 #[derive(Clone, Debug)]
-pub struct BeatmapListing<'a> {
+pub struct BeatmapListing {
     /// osu! version (e.g. 20150203)
     pub version: u32,
 
@@ -30,10 +30,10 @@ pub struct BeatmapListing<'a> {
     pub account_unlock_date: OffsetDateTime,
 
     /// Player name
-    pub player_name: OsuStr<'a>,
+    pub player_name: OsuStr,
 
     /// Beatmaps
-    pub beatmaps: Vec<BeatmapEntry<'a>>,
+    pub beatmaps: Vec<BeatmapEntry>,
 
     /// User permissions
     pub user_permissions: u32,
@@ -41,36 +41,36 @@ pub struct BeatmapListing<'a> {
 
 /// Represents a beatmap entry found in `osu.db`.
 #[derive(Clone, Debug)]
-pub struct BeatmapEntry<'a> {
+pub struct BeatmapEntry {
     /// Size in bytes of the beatmap entry. Only present if version is less than 20191106.
     pub size: Option<u32>,
 
     /// Artist name
-    pub artist_name: OsuStr<'a>,
+    pub artist_name: OsuStr,
 
     /// Artist name, in Unicode
-    pub artist_name_unicode: OsuStr<'a>,
+    pub artist_name_unicode: OsuStr,
 
     /// Song title
-    pub song_title: OsuStr<'a>,
+    pub song_title: OsuStr,
 
     /// Song title, in Unicode
-    pub song_title_unicode: OsuStr<'a>,
+    pub song_title_unicode: OsuStr,
 
     /// Creator name
-    pub creator_name: OsuStr<'a>,
+    pub creator_name: OsuStr,
 
     /// Difficulty (e.g. Hard, Insane, etc.)
-    pub difficulty: OsuStr<'a>,
+    pub difficulty: OsuStr,
 
     /// Audio file name
-    pub audio_filename: OsuStr<'a>,
+    pub audio_filename: OsuStr,
 
     /// MD5 hash of the beatmap
-    pub md5: OsuStr<'a>,
+    pub md5: OsuStr,
 
     /// Name of the .osu file corresponding to this beatmap
-    pub beatmap_filename: OsuStr<'a>,
+    pub beatmap_filename: OsuStr,
 
     /// Ranked status (0 = unknown, 1 = unsubmitted, 2 = pending/wip/graveyard, 3 = unused, 4 = ranked, 5 = approved, 6 = qualified, 7 = loved)
     pub ranked_status: RankedStatus,
@@ -157,16 +157,16 @@ pub struct BeatmapEntry<'a> {
     pub gameplay_mode: GameplayMode,
 
     /// Song source
-    pub song_source: OsuStr<'a>,
+    pub song_source: OsuStr,
 
     /// Song tags
-    pub song_tags: OsuStr<'a>,
+    pub song_tags: OsuStr,
 
     /// Online offset
     pub online_offset: u16,
 
     /// Font used for the title of the song
-    pub font: OsuStr<'a>,
+    pub font: OsuStr,
 
     /// Is beatmap unplayed
     pub is_unplayed: bool,
@@ -178,7 +178,7 @@ pub struct BeatmapEntry<'a> {
     pub is_osz2: bool,
 
     /// Folder name of the beatmap, relative to Songs folder
-    pub folder_name: OsuStr<'a>,
+    pub folder_name: OsuStr,
 
     /// Last time when beatmap was checked against osu! repository
     pub last_checked_online: OffsetDateTime,
@@ -238,7 +238,7 @@ pub struct TimingPoint {
 }
 
 /// Parses an `osu.db` file.
-fn beatmap_listing<'a>(input: &'a [u8]) -> IResult<&'a [u8], BeatmapListing<'a>> {
+fn beatmap_listing(input: &[u8]) -> IResult<&[u8], BeatmapListing> {
     let (i, version) = le_u32(input)?;
     let (i, folder_count) = le_u32(i)?;
     let (i, account_unlocked) = boolean(i)?;
@@ -264,7 +264,7 @@ fn beatmap_listing<'a>(input: &'a [u8]) -> IResult<&'a [u8], BeatmapListing<'a>>
     ))
 }
 
-fn beatmap_entry<'a>(version: u32) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], BeatmapEntry<'a>> {
+fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry> {
     let parse_difficulty: fn(&[u8]) -> IResult<&[u8], f32> = if version < 20140609 {
         |i: &[u8]| map(u8, |b| b as f32)(i)
     } else {

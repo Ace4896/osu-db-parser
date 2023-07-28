@@ -6,7 +6,7 @@ use nom::{
 };
 use time::{macros::datetime, Duration, OffsetDateTime};
 
-pub type OsuStr<'a> = Option<&'a str>;
+pub type OsuStr = Option<String>;
 
 /// Parses a boolean value in osu!'s database file formats.
 pub fn boolean(input: &[u8]) -> IResult<&[u8], bool> {
@@ -39,15 +39,16 @@ pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
 ///
 /// - `0x00` => Empty string marker; output is `None`
 /// - `0x0b, 0x00` => Zero length string; output is `Some("")`
-pub fn osu_string<'a>(input: &'a [u8]) -> IResult<&'a [u8], OsuStr<'a>> {
+pub fn osu_string(input: &[u8]) -> IResult<&[u8], OsuStr> {
     let (i, head) = u8(input)?;
 
     match head {
         0x00 => Ok((i, None)),
         0x0b => {
             let (i, length) = uleb128(i)?;
-            map_res(take(length), std::str::from_utf8)(i)
-                .map(|(i, string)| (i, Some(string)))
+            map(map_res(take(length), std::str::from_utf8), |s| {
+                Some(s.to_string())
+            })(i)
         }
         _ => fail(input),
     }
@@ -109,7 +110,7 @@ mod tests {
     fn osu_string_decoding_works() {
         let empty = vec![0x00];
         let zero_length = vec![0x0b, 0x00];
-        let test_string = "test";
+        let test_string = String::from("test");
         let mut test_string_bytes = vec![0x0b, 0x04];
 
         for byte in test_string.as_bytes() {
@@ -122,7 +123,7 @@ mod tests {
         test_string_bytes.push(0x03);
 
         assert_eq!(osu_string(&empty), Ok((&[][..], None)));
-        assert_eq!(osu_string(&zero_length), Ok((&[][..], Some(""))));
+        assert_eq!(osu_string(&zero_length), Ok((&[][..], Some("".to_string()))));
         assert_eq!(
             osu_string(&test_string_bytes),
             Ok((&[0x01, 0x02, 0x03][..], Some(test_string)))
