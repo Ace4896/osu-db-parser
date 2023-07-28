@@ -3,7 +3,7 @@
 use nom::{
     bytes::complete::tag,
     combinator::{cond, map},
-    multi::count,
+    multi::length_count,
     number::complete::{le_f32, le_f64, le_u16, le_u32, u8},
     sequence::{preceded, tuple},
     IResult,
@@ -244,10 +244,7 @@ fn beatmap_listing(input: &[u8]) -> IResult<&[u8], BeatmapListing> {
     let (i, account_unlocked) = boolean(i)?;
     let (i, account_unlock_date) = windows_datetime(i)?;
     let (i, player_name) = osu_string(i)?;
-
-    let (i, beatmap_count) = le_u32(i)?;
-    let (i, beatmaps) = count(beatmap_entry(version), beatmap_count as usize)(i)?;
-
+    let (i, beatmaps) = length_count(le_u32, beatmap_entry(version))(i)?;
     let (i, user_permissions) = le_u32(i)?;
 
     Ok((
@@ -302,12 +299,10 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, drain_time) = le_u32(i)?;
         let (i, total_time) = le_u32(i)?;
         let (i, audio_preview_time) = le_u32(i)?;
-
-        let (i, timing_point_count) = le_u32(i)?;
-        let (i, timing_points) = count(timing_point, timing_point_count as usize)(i)?;
-
+        let (i, timing_points) = length_count(le_u32, timing_point)(i)?;
         let (i, difficulty_id) = le_u32(i)?;
         let (i, beatmap_id) = le_u32(i)?;
+
         let (i, thread_id) = le_u32(i)?;
         let (i, grade_std) = u8(i)?;
         let (i, grade_taiko) = u8(i)?;
@@ -316,9 +311,9 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, local_offset) = le_u16(i)?;
         let (i, stack_leniency) = le_f32(i)?;
         let (i, gameplay_mode) = gameplay_mode(i)?;
-
         let (i, song_source) = osu_string(i)?;
         let (i, song_tags) = osu_string(i)?;
+
         let (i, online_offset) = le_u16(i)?;
         let (i, font) = osu_string(i)?;
         let (i, is_unplayed) = boolean(i)?;
@@ -327,9 +322,9 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, folder_name) = osu_string(i)?;
         let (i, last_checked_online) = windows_datetime(i)?;
         let (i, ignore_beatmap_hitsounds) = boolean(i)?;
-
         let (i, ignore_beatmap_skin) = boolean(i)?;
         let (i, disable_storyboard) = boolean(i)?;
+
         let (i, disable_video) = boolean(i)?;
 
         // NOTE: Unused f32 optional field, only present if version is less than 20140609
@@ -467,8 +462,7 @@ fn timing_point(input: &[u8]) -> IResult<&[u8], TimingPoint> {
 
 /// Parses a list of star ratings.
 fn star_ratings(input: &[u8]) -> IResult<&[u8], Vec<(u32, f64)>> {
-    let (i, total) = le_u32(input)?;
-    count(int_double_pair, total as usize)(i)
+    length_count(le_u32, int_double_pair)(input)
 }
 
 #[cfg(test)]
