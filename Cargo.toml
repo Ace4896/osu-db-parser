@@ -9,3 +9,4 @@ edition = "2021"
 flagset = "0.4"
 nom = "7"
 time = { version = "0.3", features = ["macros"] }
+thiserror = "1"

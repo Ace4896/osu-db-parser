@@ -6,6 +6,8 @@
 //! [osu! wiki]: https://github.com/ppy/osu/wiki/Legacy-database-file-structure#scoresdb
 //! [replay format]: https://osu.ppy.sh/wiki/en/Client/File_formats/osr_%28file_format%29
 
+use std::path::Path;
+
 use flagset::FlagSet;
 use nom::{
     bytes::complete::take,
@@ -16,8 +18,12 @@ use nom::{
 };
 use time::OffsetDateTime;
 
-use crate::common::{
-    boolean, gameplay_mode, modifiers, osu_string, windows_datetime, GameplayMode, Mods, OsuString,
+use crate::{
+    common::{
+        boolean, gameplay_mode, modifiers, osu_string, windows_datetime, GameplayMode, Mods,
+        OsuString,
+    },
+    error::Error,
 };
 
 /// Represents the `scores.db` file.
@@ -105,6 +111,20 @@ pub struct ScoreReplay {
     /// When target practice is enabled, this is the total accuracy of all hits.
     /// Divide this by the number of targets in the map to find the accuracy displayed in-game.
     pub additional_mod_info: Option<f64>,
+}
+
+impl ScoreListing {
+    /// Parses the contents of a `collection.db` file.
+    pub fn from_bytes(data: &[u8]) -> Result<ScoreListing, Error> {
+        let (_, listing) = score_listing(data).map_err(|e| e.to_owned())?;
+        Ok(listing)
+    }
+
+    /// Convenience method for reading the contents of an `collection.db` file and parsing it as a `ScoreListing`.
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<ScoreListing, Error> {
+        let data = std::fs::read(path)?;
+        Self::from_bytes(&data)
+    }
 }
 
 /// Parses a `scores.db` file.

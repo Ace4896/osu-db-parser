@@ -1,5 +1,7 @@
 //! Models for the main `osu.db` database file, which contains information on installed beatmaps.
 
+use std::path::Path;
+
 use flagset::FlagSet;
 use nom::{
     bytes::complete::tag,
@@ -11,8 +13,9 @@ use nom::{
 };
 use time::OffsetDateTime;
 
-use crate::common::{
-    boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, Mods, OsuString,
+use crate::{
+    common::{boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, Mods, OsuString},
+    error::Error,
 };
 
 // TODO: A couple of fields could be represented with more meaningful structs/enums
@@ -229,6 +232,20 @@ pub struct TimingPoint {
 
     /// Whether this timing point is inherited.
     pub inherited: bool,
+}
+
+impl BeatmapListing {
+    /// Parses the contents of an `osu.db` file.
+    pub fn from_bytes(data: &[u8]) -> Result<BeatmapListing, Error> {
+        let (_, listing) = beatmap_listing(data).map_err(|e| e.to_owned())?;
+        Ok(listing)
+    }
+
+    /// Convenience method for reading the contents of an `osu.db` file and parsing it as a `BeatmapListing`.
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<BeatmapListing, Error> {
+        let data = std::fs::read(path)?;
+        Self::from_bytes(&data)
+    }
 }
 
 /// Parses an `osu.db` file.

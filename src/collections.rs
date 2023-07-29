@@ -1,8 +1,13 @@
 //! Models for the `collection.db` database file, which contains information on beatmap collections.
 
+use std::path::Path;
+
 use nom::{multi::length_count, number::complete::le_u32, IResult};
 
-use crate::common::{osu_string, OsuString};
+use crate::{
+    common::{osu_string, OsuString},
+    error::Error,
+};
 
 #[derive(Clone, Debug)]
 pub struct CollectionListing {
@@ -20,6 +25,20 @@ pub struct Collection {
 
     /// MD5 hashes of beatmaps in the collection
     pub beatmap_md5s: Vec<OsuString>,
+}
+
+impl CollectionListing {
+    /// Parses the contents of a `collection.db` file.
+    pub fn from_bytes(data: &[u8]) -> Result<CollectionListing, Error> {
+        let (_, listing) = collection_listing(data).map_err(|e| e.to_owned())?;
+        Ok(listing)
+    }
+
+    /// Convenience method for reading the contents of an `collection.db` file and parsing it as a `CollectionListing`.
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<CollectionListing, Error> {
+        let data = std::fs::read(path)?;
+        Self::from_bytes(&data)
+    }
 }
 
 /// Parses a `collection.db` file.
