@@ -6,6 +6,7 @@
 //! [osu! wiki]: https://github.com/ppy/osu/wiki/Legacy-database-file-structure#scoresdb
 //! [replay format]: https://osu.ppy.sh/wiki/en/Client/File_formats/osr_%28file_format%29
 
+use flagset::FlagSet;
 use nom::{
     bytes::complete::take,
     combinator::{cond, map},
@@ -16,7 +17,7 @@ use nom::{
 use time::OffsetDateTime;
 
 use crate::common::{
-    boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, OsuString,
+    boolean, gameplay_mode, modifiers, osu_string, windows_datetime, GameplayMode, Mods, OsuString,
 };
 
 /// Represents the `scores.db` file.
@@ -84,7 +85,7 @@ pub struct ScoreReplay {
     pub is_perfect_combo: bool,
 
     /// Mods used
-    pub mods: u32,
+    pub mods: FlagSet<Mods>,
 
     /// Life bar graph (see [replay format details](https://osu.ppy.sh/wiki/en/Client/File_formats/osr_%28file_format%29#format)).
     /// Only present when parsing a `.osr` replay file.
@@ -144,7 +145,7 @@ fn score_replay(input: &[u8]) -> IResult<&[u8], ScoreReplay> {
     let (i, score) = le_u32(i)?;
     let (i, max_combo) = le_u16(i)?;
     let (i, is_perfect_combo) = boolean(i)?;
-    let (i, mods) = le_u32(i)?;
+    let (i, mods) = modifiers(i)?;
     let (i, lifebar_graph) = osu_string(i)?;
     let (i, timestamp) = windows_datetime(i)?;
 
@@ -157,9 +158,8 @@ fn score_replay(input: &[u8]) -> IResult<&[u8], ScoreReplay> {
 
     let (i, online_score_id) = le_u64(i)?;
 
-    // TODO: Replace this check with bitflags enum
-    // For now, we know that target practice is enabled when bit 23 is set
-    let (i, additional_mod_info) = cond((mods & (1 << 23)) > 0, le_f64)(i)?;
+    // At the moment, additional mod information is only present when target practice is enabled
+    let (i, additional_mod_info) = cond(mods.contains(Mods::TargetPractice), le_f64)(i)?;
 
     Ok((
         i,

@@ -1,5 +1,6 @@
 //! Models for the main `osu.db` database file, which contains information on installed beatmaps.
 
+use flagset::FlagSet;
 use nom::{
     bytes::complete::tag,
     combinator::{cond, map},
@@ -11,7 +12,7 @@ use nom::{
 use time::OffsetDateTime;
 
 use crate::common::{
-    boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, OsuString,
+    boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, Mods, OsuString,
 };
 
 // TODO: A couple of fields could be represented with more meaningful structs/enums
@@ -105,16 +106,16 @@ pub struct BeatmapEntry {
     pub slider_velocity: f64,
 
     /// Star Rating info for osu! standard
-    pub star_ratings_std: Vec<(u32, f64)>,
+    pub star_ratings_std: Vec<(FlagSet<Mods>, f64)>,
 
     /// Star Rating info for Taiko
-    pub star_ratings_taiko: Vec<(u32, f64)>,
+    pub star_ratings_taiko: Vec<(FlagSet<Mods>, f64)>,
 
     /// Star Rating info for CTB
-    pub star_ratings_ctb: Vec<(u32, f64)>,
+    pub star_ratings_ctb: Vec<(FlagSet<Mods>, f64)>,
 
     /// Star Rating info for osu!mania
-    pub star_ratings_mania: Vec<(u32, f64)>,
+    pub star_ratings_mania: Vec<(FlagSet<Mods>, f64)>,
 
     /// Drain time, in seconds
     pub drain_time: u32,
@@ -433,8 +434,13 @@ fn timing_point(input: &[u8]) -> IResult<&[u8], TimingPoint> {
 }
 
 /// Parses a list of star ratings.
-fn star_ratings(input: &[u8]) -> IResult<&[u8], Vec<(u32, f64)>> {
-    length_count(le_u32, int_double_pair)(input)
+fn star_ratings(input: &[u8]) -> IResult<&[u8], Vec<(FlagSet<Mods>, f64)>> {
+    length_count(
+        le_u32,
+        map(int_double_pair, |(i, d)| {
+            (FlagSet::<Mods>::new_truncated(i), d)
+        }),
+    )(input)
 }
 
 #[cfg(test)]
@@ -532,14 +538,15 @@ pub mod tests {
 
     #[test]
     fn star_ratings_decoding_works() {
-        let ratings: Vec<(u32, f64)> = vec![(0, 1.2), (1, 2.3)];
+        let ratings: Vec<(FlagSet<Mods>, f64)> =
+            vec![(Mods::None.into(), 1.2), (Mods::NoFail.into(), 2.3)];
         let length = ratings.len() as u32;
 
         let mut input = length.to_le_bytes().to_vec();
 
         for (mods, rating) in ratings.iter() {
             input.push(0x08);
-            input.extend_from_slice(&mods.to_le_bytes());
+            input.extend_from_slice(&mods.bits().to_le_bytes());
             input.push(0x0d);
             input.extend_from_slice(&rating.to_le_bytes());
         }
