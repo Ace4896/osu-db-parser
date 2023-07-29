@@ -105,17 +105,17 @@ pub struct BeatmapEntry {
     /// Slider velocity
     pub slider_velocity: f64,
 
-    /// Star Rating info for osu! standard
-    pub star_ratings_std: Vec<(FlagSet<Mods>, f64)>,
+    /// Star Rating info for osu! standard. Only present if version is greater than or equal to 20140609.
+    pub star_ratings_std: Option<Vec<(FlagSet<Mods>, f64)>>,
 
-    /// Star Rating info for Taiko
-    pub star_ratings_taiko: Vec<(FlagSet<Mods>, f64)>,
+    /// Star Rating info for Taiko. Only present if version is greater than or equal to 20140609.
+    pub star_ratings_taiko: Option<Vec<(FlagSet<Mods>, f64)>>,
 
-    /// Star Rating info for CTB
-    pub star_ratings_ctb: Vec<(FlagSet<Mods>, f64)>,
+    /// Star Rating info for CTB. Only present if version is greater than or equal to 20140609.
+    pub star_ratings_ctb: Option<Vec<(FlagSet<Mods>, f64)>>,
 
-    /// Star Rating info for osu!mania
-    pub star_ratings_mania: Vec<(FlagSet<Mods>, f64)>,
+    /// Star Rating info for osu!mania. Only present if version is greater than or equal to 20140609.
+    pub star_ratings_mania: Option<Vec<(FlagSet<Mods>, f64)>>,
 
     /// Drain time, in seconds
     pub drain_time: u32,
@@ -286,10 +286,10 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, overall_difficulty) = parse_difficulty(i)?;
         let (i, slider_velocity) = le_f64(i)?;
 
-        let (i, star_ratings_std) = star_ratings(i)?;
-        let (i, star_ratings_taiko) = star_ratings(i)?;
-        let (i, star_ratings_ctb) = star_ratings(i)?;
-        let (i, star_ratings_mania) = star_ratings(i)?;
+        let (i, star_ratings_std) = cond(version > 20140609, star_ratings)(i)?;
+        let (i, star_ratings_taiko) = cond(version > 20140609, star_ratings)(i)?;
+        let (i, star_ratings_ctb) = cond(version > 20140609, star_ratings)(i)?;
+        let (i, star_ratings_mania) = cond(version > 20140609, star_ratings)(i)?;
         let (i, drain_time) = le_u32(i)?;
         let (i, total_time) = le_u32(i)?;
         let (i, audio_preview_time) = le_u32(i)?;
