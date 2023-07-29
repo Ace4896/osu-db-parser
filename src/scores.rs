@@ -127,6 +127,20 @@ impl ScoreListing {
     }
 }
 
+impl ScoreReplay  {
+    /// Parses the contents of a `.osr` replay.
+    pub fn from_bytes(data: &[u8]) -> Result<ScoreReplay, Error> {
+        let (_, listing) = score_replay(data).map_err(|e| e.to_owned())?;
+        Ok(listing)
+    }
+
+    /// Convenience method for reading the contents of an `collection.db` file and parsing it as a `ScoreListing`.
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<ScoreReplay, Error> {
+        let data = std::fs::read(path)?;
+        Self::from_bytes(&data)
+    }
+}
+
 /// Parses a `scores.db` file.
 fn score_listing(input: &[u8]) -> IResult<&[u8], ScoreListing> {
     let (i, version) = le_u32(input)?;
