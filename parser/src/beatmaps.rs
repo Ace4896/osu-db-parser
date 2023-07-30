@@ -201,6 +201,12 @@ pub struct BeatmapEntry {
     /// Disable video
     pub disable_video: bool,
 
+    /// Unknown. Only present if version is less than 20140609.
+    pub unknown_f32: Option<f32>,
+
+    /// Last modification time(?)
+    pub unknown_u32: u32,
+
     /// Mania scroll speed
     pub mania_scroll_speed: u8,
 }
@@ -349,10 +355,10 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, disable_video) = boolean(i)?;
 
         // NOTE: Unused f32 optional field, only present if version is less than 20140609
-        let (i, _) = cond(version < 20140609, le_f32)(i)?;
+        let (i, unknown_f32) = cond(version < 20140609, le_f32)(i)?;
 
         // NOTE: Unused u32 field (appears to be last modification time as well)
-        let (i, _) = le_u32(i)?;
+        let (i, unknown_u32) = le_u32(i)?;
 
         let (i, mania_scroll_speed) = u8(i)?;
 
@@ -410,6 +416,8 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
                 ignore_beatmap_skin,
                 disable_storyboard,
                 disable_video,
+                unknown_f32,
+                unknown_u32,
                 mania_scroll_speed,
             },
         ))
