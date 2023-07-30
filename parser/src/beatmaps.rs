@@ -140,16 +140,16 @@ pub struct BeatmapEntry {
     pub thread_id: u32,
 
     /// Grade achieved in osu! standard
-    pub grade_std: u8,
+    pub grade_std: Grade,
 
     /// Grade achieved in taiko
-    pub grade_taiko: u8,
+    pub grade_taiko: Grade,
 
     /// Grade achieved in CTB
-    pub grade_catch: u8,
+    pub grade_catch: Grade,
 
     /// Grade achieved in osu!mania
-    pub grade_mania: u8,
+    pub grade_mania: Grade,
 
     /// Local beatmap offset
     pub local_offset: u16,
@@ -226,6 +226,20 @@ pub enum RankedStatus {
     Approved = 5,
     Qualified = 6,
     Loved = 7,
+}
+
+/// Represents a grade achieved on a beatmap.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Grade {
+    SilverSS = 0,
+    SilverS = 1,
+    SS = 2,
+    S = 3,
+    A = 4,
+    B = 5,
+    C = 6,
+    D = 7,
+    Unplayed = 9,
 }
 
 /// Represents a star rating calculation for a particular mod combination.
@@ -344,10 +358,10 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, beatmap_id) = le_u32(i)?;
 
         let (i, thread_id) = le_u32(i)?;
-        let (i, grade_std) = u8(i)?;
-        let (i, grade_taiko) = u8(i)?;
-        let (i, grade_catch) = u8(i)?;
-        let (i, grade_mania) = u8(i)?;
+        let (i, grade_std) = grade(i)?;
+        let (i, grade_taiko) = grade(i)?;
+        let (i, grade_catch) = grade(i)?;
+        let (i, grade_mania) = grade(i)?;
         let (i, local_offset) = le_u16(i)?;
         let (i, stack_leniency) = le_f32(i)?;
         let (i, gameplay_mode) = gameplay_mode(i)?;
@@ -461,6 +475,32 @@ fn ranked_status(input: &[u8]) -> IResult<&[u8], RankedStatus> {
     };
 
     Ok((i, status))
+}
+
+/// Parses a grade value.
+fn grade(input: &[u8]) -> IResult<&[u8], Grade> {
+    use Grade::*;
+
+    let (i, grade) = u8(input)?;
+    let grade = match grade {
+        0 => SilverSS,
+        1 => SilverS,
+        2 => SS,
+        3 => S,
+        4 => A,
+        5 => B,
+        6 => C,
+        7 => D,
+        9 => Unplayed,
+        _ => {
+            return Err(nom::Err::Error(nom::error::Error {
+                input,
+                code: nom::error::ErrorKind::Switch,
+            }))
+        }
+    };
+
+    Ok((i, grade))
 }
 
 /// Parses a integer-double pair found in `osu.db`.
