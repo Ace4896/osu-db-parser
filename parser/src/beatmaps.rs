@@ -201,8 +201,11 @@ pub struct BeatmapEntry {
     /// Disable video
     pub disable_video: bool,
 
+    /// Visual override
+    pub visual_override: bool,
+
     /// Unknown. Only present if version is less than 20140609.
-    pub unknown_f32: Option<f32>,
+    pub unknown_u16: Option<u16>,
 
     /// Last modification time(?)
     pub unknown_u32: u32,
@@ -319,10 +322,10 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, overall_difficulty) = parse_difficulty(i)?;
         let (i, slider_velocity) = le_f64(i)?;
 
-        let (i, star_ratings_std) = cond(version > 20140609, star_ratings)(i)?;
-        let (i, star_ratings_taiko) = cond(version > 20140609, star_ratings)(i)?;
-        let (i, star_ratings_ctb) = cond(version > 20140609, star_ratings)(i)?;
-        let (i, star_ratings_mania) = cond(version > 20140609, star_ratings)(i)?;
+        let (i, star_ratings_std) = cond(version >= 20140609, star_ratings)(i)?;
+        let (i, star_ratings_taiko) = cond(version >= 20140609, star_ratings)(i)?;
+        let (i, star_ratings_ctb) = cond(version >= 20140609, star_ratings)(i)?;
+        let (i, star_ratings_mania) = cond(version >= 20140609, star_ratings)(i)?;
         let (i, drain_time) = le_u32(i)?;
         let (i, total_time) = le_u32(i)?;
         let (i, audio_preview_time) = le_u32(i)?;
@@ -353,9 +356,10 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
         let (i, disable_storyboard) = boolean(i)?;
 
         let (i, disable_video) = boolean(i)?;
+        let (i, visual_override) = boolean(i)?;
 
-        // NOTE: Unused f32 optional field, only present if version is less than 20140609
-        let (i, unknown_f32) = cond(version < 20140609, le_f32)(i)?;
+        // NOTE: Unused u16 optional field, only present if version is less than 20140609
+        let (i, unknown_u16) = cond(version < 20140609, le_u16)(i)?;
 
         // NOTE: Unused u32 field (appears to be last modification time as well)
         let (i, unknown_u32) = le_u32(i)?;
@@ -416,7 +420,8 @@ fn beatmap_entry(version: u32) -> impl Fn(&[u8]) -> IResult<&[u8], BeatmapEntry>
                 ignore_beatmap_skin,
                 disable_storyboard,
                 disable_video,
-                unknown_f32,
+                visual_override,
+                unknown_u16,
                 unknown_u32,
                 mania_scroll_speed,
             },
