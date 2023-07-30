@@ -1,7 +1,7 @@
 use flagset::{flags, FlagSet};
 use nom::{
     bytes::complete::{take, take_while},
-    combinator::{fail, map, map_res},
+    combinator::{fail, map, map_opt, map_res},
     number::complete::{le_u32, le_u64, u8},
     IResult,
 };
@@ -139,14 +139,13 @@ pub fn osu_string(input: &[u8]) -> IResult<&[u8], OsuString> {
 pub fn windows_datetime(input: &[u8]) -> IResult<&[u8], OffsetDateTime> {
     const WINDOWS_EPOCH: OffsetDateTime = datetime!(0001-01-01 0:00 UTC);
 
-    // In .NET, there are 10,000 ticks per millisecond
-    // So 10 ticks / microsecond, 0.01 ticks per nanosecond
-    let (i, ticks) = le_u64(input)?;
-    let result = WINDOWS_EPOCH
-        + Duration::microseconds((ticks / 10) as i64)
-        + Duration::nanoseconds(((ticks % 10) * 100) as i64);
-
-    Ok((i, result))
+    map_opt(le_u64, |ticks| {
+        // In .NET, there are 10,000 ticks per millisecond
+        // So 10 ticks / microsecond, 0.01 ticks per nanosecond
+        let duration = Duration::microseconds((ticks / 10) as i64)
+            + Duration::nanoseconds(((ticks % 10) * 100) as i64);
+        WINDOWS_EPOCH.checked_add(duration)
+    })(input)
 }
 
 #[cfg(test)]
