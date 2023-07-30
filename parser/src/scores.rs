@@ -60,6 +60,9 @@ pub struct ScoreReplay {
     /// Beatmap MD5 hash
     pub beatmap_md5: OsuString,
 
+    /// Player name
+    pub player_name: OsuString,
+
     /// Replay MD5 hash
     pub replay_md5: OsuString,
 
@@ -168,6 +171,7 @@ fn score_replay(input: &[u8]) -> IResult<&[u8], ScoreReplay> {
     let (i, gameplay_mode) = gameplay_mode(input)?;
     let (i, version) = le_u32(i)?;
     let (i, beatmap_md5) = osu_string(i)?;
+    let (i, player_name) = osu_string(i)?;
     let (i, replay_md5) = osu_string(i)?;
     let (i, hits_300) = le_u16(i)?;
     let (i, hits_100) = le_u16(i)?;
@@ -201,6 +205,7 @@ fn score_replay(input: &[u8]) -> IResult<&[u8], ScoreReplay> {
             gameplay_mode,
             version,
             beatmap_md5,
+            player_name,
             replay_md5,
             hits_300,
             hits_100,
