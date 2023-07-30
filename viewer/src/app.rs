@@ -88,16 +88,19 @@ impl MainApp {
                     if ui.button("Open osu.db...").clicked() {
                         self.waiting_for_db = Some(DatabaseType::BeatmapListing);
                         self.file_dialog.open();
+                        ui.close_menu();
                     }
 
                     if ui.button("Open collection.db...").clicked() {
                         self.waiting_for_db = Some(DatabaseType::CollectionListing);
                         self.file_dialog.open();
+                        ui.close_menu();
                     }
 
                     if ui.button("Open scores.db...").clicked() {
                         self.waiting_for_db = Some(DatabaseType::ScoreListing);
                         self.file_dialog.open();
+                        ui.close_menu();
                     }
 
                     #[cfg(not(target_arch = "wasm32"))]
