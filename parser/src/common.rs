@@ -94,8 +94,8 @@ pub fn modifiers(input: &[u8]) -> IResult<&[u8], FlagSet<Mods>> {
     map(le_u32, FlagSet::<Mods>::new_truncated)(input)
 }
 
-/// Decodes a ULEB128 value into an unsigned 64-bit integer.
-pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
+/// Decodes a ULEB128 value into an unsigned pointer-sized integer.
+pub fn uleb128(input: &[u8]) -> IResult<&[u8], usize> {
     let (i, uleb_start) = take_while(|byte| byte & 0x80 > 1)(input)?;
     let (i, uleb_final) = u8(i)?;
 
@@ -103,11 +103,11 @@ pub fn uleb128(input: &[u8]) -> IResult<&[u8], u64> {
     let mut shift = 0;
 
     for byte in uleb_start {
-        result |= ((*byte & 0x7F) as u64) << shift;
+        result |= ((*byte & 0x7F) as usize) << shift;
         shift += 7;
     }
 
-    result |= ((uleb_final & 0x7F) as u64) << shift;
+    result |= ((uleb_final & 0x7F) as usize) << shift;
     Ok((i, result))
 }
 
