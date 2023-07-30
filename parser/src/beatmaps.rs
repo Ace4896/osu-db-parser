@@ -109,16 +109,16 @@ pub struct BeatmapEntry {
     pub slider_velocity: f64,
 
     /// Star Rating info for osu! standard. Only present if version is greater than or equal to 20140609.
-    pub star_ratings_std: Option<Vec<(FlagSet<Mods>, f64)>>,
+    pub star_ratings_std: Option<Vec<StarRating>>,
 
     /// Star Rating info for Taiko. Only present if version is greater than or equal to 20140609.
-    pub star_ratings_taiko: Option<Vec<(FlagSet<Mods>, f64)>>,
+    pub star_ratings_taiko: Option<Vec<StarRating>>,
 
     /// Star Rating info for CTB. Only present if version is greater than or equal to 20140609.
-    pub star_ratings_ctb: Option<Vec<(FlagSet<Mods>, f64)>>,
+    pub star_ratings_ctb: Option<Vec<StarRating>>,
 
     /// Star Rating info for osu!mania. Only present if version is greater than or equal to 20140609.
-    pub star_ratings_mania: Option<Vec<(FlagSet<Mods>, f64)>>,
+    pub star_ratings_mania: Option<Vec<StarRating>>,
 
     /// Drain time, in seconds
     pub drain_time: u32,
@@ -219,6 +219,16 @@ pub enum RankedStatus {
     Approved = 5,
     Qualified = 6,
     Loved = 7,
+}
+
+/// Represents a star rating calculation for a particular mod combination.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StarRating {
+    /// The mods used for this star rating
+    pub mods: FlagSet<Mods>,
+
+    /// The calculated star rating
+    pub rating: f64,
 }
 
 /// Represents a timing point found in `osu.db`.
@@ -451,11 +461,12 @@ fn timing_point(input: &[u8]) -> IResult<&[u8], TimingPoint> {
 }
 
 /// Parses a list of star ratings.
-fn star_ratings(input: &[u8]) -> IResult<&[u8], Vec<(FlagSet<Mods>, f64)>> {
+fn star_ratings(input: &[u8]) -> IResult<&[u8], Vec<StarRating>> {
     length_count(
         le_u32,
-        map(int_double_pair, |(i, d)| {
-            (FlagSet::<Mods>::new_truncated(i), d)
+        map(int_double_pair, |(i, d)| StarRating {
+            mods: FlagSet::<Mods>::new_truncated(i),
+            rating: d,
         }),
     )(input)
 }
@@ -555,13 +566,21 @@ pub mod tests {
 
     #[test]
     fn star_ratings_decoding_works() {
-        let ratings: Vec<(FlagSet<Mods>, f64)> =
-            vec![(Mods::None.into(), 1.2), (Mods::NoFail.into(), 2.3)];
-        let length = ratings.len() as u32;
+        let ratings = vec![
+            StarRating {
+                mods: Mods::None.into(),
+                rating: 1.2,
+            },
+            StarRating {
+                mods: Mods::NoFail.into(),
+                rating: 2.3,
+            },
+        ];
 
+        let length = ratings.len() as u32;
         let mut input = length.to_le_bytes().to_vec();
 
-        for (mods, rating) in ratings.iter() {
+        for StarRating { mods, rating } in ratings.iter() {
             input.push(0x08);
             input.extend_from_slice(&mods.bits().to_le_bytes());
             input.push(0x0d);
