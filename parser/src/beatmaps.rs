@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use flagset::FlagSet;
+use flagset::{flags, FlagSet};
 use nom::{
     bytes::complete::tag,
     combinator::{cond, map},
@@ -17,8 +17,6 @@ use crate::{
     common::{boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, Mods, OsuString},
     error::Error,
 };
-
-// TODO: A couple of fields could be represented with more meaningful structs/enums
 
 /// Represents the `osu.db` file.
 #[derive(Clone, Debug)]
@@ -42,7 +40,7 @@ pub struct BeatmapListing {
     pub beatmaps: Vec<BeatmapEntry>,
 
     /// User permissions
-    pub user_permissions: u32,
+    pub user_permissions: FlagSet<UserPermissions>,
 }
 
 /// Represents a beatmap entry found in `osu.db`.
@@ -253,6 +251,18 @@ pub struct TimingPoint {
     pub inherited: bool,
 }
 
+flags! {
+    /// Represents the available user permissions.
+    pub enum UserPermissions : u32 {
+        Normal = 1 << 0,        // 1
+        Moderator = 1 << 1,     // 2
+        Supporter = 1 << 2,     // 4
+        Friend = 1 << 3,        // 8
+        Peppy = 1 << 4,         // 16
+        WorldCupStaff = 1 << 5, // 32
+    }
+}
+
 impl BeatmapListing {
     /// Parses the contents of an `osu.db` file.
     pub fn from_bytes(data: &[u8]) -> Result<BeatmapListing, Error> {
@@ -275,7 +285,7 @@ fn beatmap_listing(input: &[u8]) -> IResult<&[u8], BeatmapListing> {
     let (i, account_unlock_date) = windows_datetime(i)?;
     let (i, player_name) = osu_string(i)?;
     let (i, beatmaps) = length_count(le_u32, beatmap_entry(version))(i)?;
-    let (i, user_permissions) = le_u32(i)?;
+    let (i, user_permissions) = user_permissions(i)?;
 
     Ok((
         i,
@@ -482,6 +492,11 @@ fn star_ratings(input: &[u8]) -> IResult<&[u8], Vec<StarRating>> {
             rating: d,
         }),
     )(input)
+}
+
+/// Parses a set of user permissions.
+fn user_permissions(input: &[u8]) -> IResult<&[u8], FlagSet<UserPermissions>> {
+    map(le_u32, FlagSet::<UserPermissions>::new_truncated)(input)
 }
 
 #[cfg(test)]
