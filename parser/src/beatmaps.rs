@@ -596,7 +596,7 @@ pub mod tests {
     fn star_ratings_decoding_works() {
         let ratings = vec![
             StarRating {
-                mods: Mods::None.into(),
+                mods: Mods::none(),
                 rating: 1.2,
             },
             StarRating {

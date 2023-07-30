@@ -21,7 +21,6 @@ pub enum GameplayMode {
 flags! {
     /// Represents a combination of gameplay modifiers.
     pub enum Mods: u32 {
-        None = 0,
         NoFail = 1 << 0,
         Easy = 1 << 1,
         TouchDevice = 1 << 2,
@@ -54,6 +53,13 @@ flags! {
         Key2 = 1 << 28,
         ScoreV2 = 1 << 29,
         Mirror = 1 << 30,
+    }
+}
+
+impl Mods {
+    /// Creates a blank set of gameplay modifiers (i.e. NoMod).
+    pub fn none() -> FlagSet<Mods> {
+        FlagSet::<Mods>::new_truncated(0)
     }
 }
 
