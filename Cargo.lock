@@ -1388,6 +1388,7 @@ dependencies = [
  "env_logger",
  "js-sys",
  "log",
+ "osu-db-parser",
  "rfd",
  "wasm-bindgen",
  "wasm-bindgen-futures",

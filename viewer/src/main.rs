@@ -11,7 +11,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "osu! Database Viewer",
         native_options,
-        Box::new(|_| Box::new(app::TemplateApp::default())),
+        Box::new(|_| Box::new(app::MainApp::default())),
     )
 }
 
@@ -26,7 +26,7 @@ fn main() {
             .start(
                 "appCanvas",
                 web_options,
-                Box::new(|_| Box::new(app::TemplateApp::default())),
+                Box::new(|_| Box::new(app::MainApp::default())),
             )
             .await
             .expect("failed to start eframe");
