@@ -220,7 +220,40 @@ impl MainApp {
             egui::Window::new(&open_beatmap_listing.title)
                 .id(open_beatmap_listing.id)
                 .open(&mut open_beatmap_listing.visible)
-                .show(ctx, |ui| {});
+                .show(ctx, |ui| {
+                    let beatmap_listing = &open_beatmap_listing.beatmap_listing;
+
+                    // Base Details
+                    egui::Grid::new(open_beatmap_listing.id.with("base_details")).show(ui, |ui| {
+                        ui.label("Version");
+                        ui.label(beatmap_listing.version.to_string());
+                        ui.end_row();
+
+                        ui.label("Folder Count");
+                        ui.label(beatmap_listing.folder_count.to_string());
+                        ui.end_row();
+
+                        ui.label("Account Unlocked?");
+                        ui.label(beatmap_listing.account_unlocked.to_string());
+                        ui.end_row();
+
+                        ui.label("Account Unlock Date");
+                        ui.label(beatmap_listing.account_unlock_date.to_string());
+                        ui.end_row();
+
+                        ui.label("Player Name");
+                        ui.label(beatmap_listing.player_name.clone().unwrap_or_default());
+                        ui.end_row();
+
+                        // TODO: Formatting for flag sets like this
+                        ui.label("User Permissions");
+                        ui.label(format!("{:?}", beatmap_listing.user_permissions));
+                        ui.end_row();
+                    });
+
+                    // Beatmaps
+                    ui.collapsing("Beatmaps", |ui| {});
+                });
         }
     }
 }
