@@ -130,7 +130,7 @@ impl ScoreListing {
     }
 }
 
-impl ScoreReplay  {
+impl ScoreReplay {
     /// Parses the contents of a `.osr` replay.
     pub fn from_bytes(data: &[u8]) -> Result<ScoreReplay, Error> {
         let (_, listing) = score_replay(data).map_err(|e| e.to_owned())?;

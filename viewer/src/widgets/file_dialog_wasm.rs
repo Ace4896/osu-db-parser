@@ -1,5 +1,5 @@
 //! A wrapper around web file dialogs for egui.
-//! 
+//!
 //! Based on the implementation from [kirjavascript/trueLMAO](https://github.com/kirjavascript/trueLMAO/tree/master).
 
 use js_sys::{Array, ArrayBuffer, Uint8Array};

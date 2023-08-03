@@ -1,5 +1,5 @@
 //! A wrapper around native file dialogs for egui.
-//! 
+//!
 //! Based on the implementation from [kirjavascript/trueLMAO](https://github.com/kirjavascript/trueLMAO/tree/master).
 
 use rfd;
@@ -10,9 +10,7 @@ pub struct FileDialog {
 
 impl Default for FileDialog {
     fn default() -> Self {
-        Self {
-            file: None,
-        }
+        Self { file: None }
     }
 }
 
@@ -29,9 +27,7 @@ impl FileDialog {
     }
 
     pub fn save(&self, filename: &str, file: Vec<u8>) {
-        let path = rfd::FileDialog::new()
-            .set_file_name(filename)
-            .save_file();
+        let path = rfd::FileDialog::new().set_file_name(filename).save_file();
 
         if let Some(path) = path {
             std::fs::write(path, file).ok();
