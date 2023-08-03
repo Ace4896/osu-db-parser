@@ -220,6 +220,7 @@ impl MainApp {
             egui::Window::new(&open_beatmap_listing.title)
                 .id(open_beatmap_listing.id)
                 .open(&mut open_beatmap_listing.visible)
+                .resizable(true)
                 .show(ctx, |ui| {
                     let beatmap_listing = &open_beatmap_listing.beatmap_listing;
 
@@ -252,7 +253,35 @@ impl MainApp {
                     });
 
                     // Beatmaps
-                    ui.collapsing("Beatmaps", |ui| {});
+                    ui.collapsing("Beatmaps", |ui| {
+                        let row_height = ui.text_style_height(&egui::TextStyle::Body);
+
+                        egui::ScrollArea::both()
+                            .auto_shrink([false, true])
+                            .scroll_bar_visibility(
+                                egui::scroll_area::ScrollBarVisibility::AlwaysVisible,
+                            )
+                            .show_rows(
+                                ui,
+                                row_height,
+                                beatmap_listing.beatmaps.len(),
+                                |ui, row_range| {
+                                    for i in row_range {
+                                        let beatmap = &beatmap_listing.beatmaps[i];
+                                        let header = format!(
+                                            "{} - {} [{}]",
+                                            &beatmap.artist_name.clone().unwrap_or_default(),
+                                            &beatmap.song_title.clone().unwrap_or_default(),
+                                            &beatmap.difficulty.clone().unwrap_or_default()
+                                        );
+
+                                        egui::CollapsingHeader::new(header)
+                                            .id_source(open_beatmap_listing.id.with(i))
+                                            .show(ui, |ui| {});
+                                    }
+                                },
+                            );
+                    });
                 });
         }
     }
