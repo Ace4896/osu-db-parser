@@ -277,6 +277,40 @@ flags! {
     }
 }
 
+impl std::fmt::Display for RankedStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use RankedStatus::*;
+        
+        match self {
+            Unknown => write!(f, "Unknown"),
+            Unsubmitted => write!(f, "Unsubmitted"),
+            Pending => write!(f, "Pending"),
+            Ranked => write!(f, "Ranked"),
+            Approved => write!(f, "Approved"),
+            Qualified => write!(f, "Qualified"),
+            Loved => write!(f, "Loved"),
+        }
+    }
+}
+
+impl std::fmt::Display for Grade {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Grade::*;
+
+        match self {
+            SilverSS => write!(f, "SS+"),
+            SilverS => write!(f, "S+"),
+            SS => write!(f, "SS"),
+            S => write!(f, "S"),
+            A => write!(f, "A"),
+            B => write!(f, "B"),
+            C => write!(f, "C"),
+            D => write!(f, "D"),
+            Unplayed => write!(f, "Unplayed"),
+        }
+    }
+}
+
 impl BeatmapListing {
     /// Parses the contents of an `osu.db` file.
     pub fn from_bytes(data: &[u8]) -> Result<BeatmapListing, Error> {

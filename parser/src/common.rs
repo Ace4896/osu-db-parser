@@ -56,6 +56,19 @@ flags! {
     }
 }
 
+impl std::fmt::Display for GameplayMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use GameplayMode::*;
+
+        match self {
+            Standard => write!(f, "Standard"),
+            Taiko => write!(f, "Taiko"),
+            Catch => write!(f, "Catch"),
+            Mania => write!(f, "Mania"),
+        }
+    }
+}
+
 impl Mods {
     /// Creates a blank set of gameplay modifiers (i.e. NoMod).
     pub fn none() -> FlagSet<Mods> {
