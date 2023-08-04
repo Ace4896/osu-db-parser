@@ -2,12 +2,16 @@ use osu_db_parser::prelude::*;
 
 use crate::widgets::file_dialog::FileDialog;
 
-use self::{beatmap_listing::BeatmapListingView, collection_listing::CollectionListingView};
+use self::{
+    beatmap_listing::BeatmapListingView, collection_listing::CollectionListingView,
+    score_listing::ScoreListingView,
+};
 
 mod beatmap_details;
 mod beatmap_listing;
 mod collection_listing;
 mod replay;
+mod score_details;
 mod score_listing;
 
 // TODO: Simplified layout (again):
@@ -24,8 +28,7 @@ pub struct MainApp {
     current_view: ViewType,
     beatmap_listing_view: BeatmapListingView,
     collection_listing_view: CollectionListingView,
-
-    score_listings: Vec<WindowDetails<ScoreListing>>,
+    score_listing_view: ScoreListingView,
     replays: Vec<WindowDetails<ScoreReplay>>,
 }
 
@@ -63,8 +66,7 @@ impl Default for MainApp {
             current_view: ViewType::BeatmapListing,
             beatmap_listing_view: BeatmapListingView::default(),
             collection_listing_view: CollectionListingView::default(),
-
-            score_listings: Vec::new(),
+            score_listing_view: ScoreListingView::default(),
             replays: Vec::new(),
         }
     }
@@ -83,7 +85,11 @@ impl eframe::App for MainApp {
             (ViewType::CollectionListing, Some(beatmap_listing)) => self
                 .collection_listing_view
                 .view(ctx, beatmap_listing, &self.beatmap_listing_view.md5_mapping),
-            (ViewType::ScoreListing, Some(_)) => todo!(),
+            (ViewType::ScoreListing, Some(beatmap_listing)) => self.score_listing_view.view(
+                ctx,
+                beatmap_listing,
+                &self.beatmap_listing_view.md5_mapping,
+            ),
             (ViewType::Replays, Some(_)) => todo!(),
             _ => {}
         }
@@ -120,18 +126,13 @@ impl MainApp {
                     }
                     FileOperation::GetScoreListing => match ScoreListing::from_bytes(&data) {
                         Ok(score_listing) => {
-                            let title = format!("Score Listing #{}", self.score_listings.len());
-                            self.score_listings.push(WindowDetails {
-                                visible: true,
-                                title,
-                                data: score_listing,
-                            });
+                            self.score_listing_view.load_score_listing(score_listing);
                         }
                         Err(e) => log::warn!("Unable to open score listing: {}", e),
                     },
                     FileOperation::GetReplay => match ScoreReplay::from_bytes(&data) {
                         Ok(replay) => {
-                            let title = format!("Replay #{}", self.score_listings.len());
+                            let title = format!("Replay #{}", self.replays.len());
                             self.replays.push(WindowDetails {
                                 visible: true,
                                 title,
