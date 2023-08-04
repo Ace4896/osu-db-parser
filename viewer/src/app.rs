@@ -58,6 +58,7 @@ impl eframe::App for MainApp {
 
         self.menu_bar(ctx, frame);
         self.displayed_beatmaps(ctx);
+        self.collection_listings(ctx);
         self.beatmap_listing(ctx);
     }
 }
@@ -202,6 +203,84 @@ impl MainApp {
                         .show(ctx, |ui| beatmap_details(grid_id, ui, beatmap));
                 }
             }
+        }
+    }
+
+    /// Renders the details for a loaded collection list in a separate window.
+    fn collection_listings(&mut self, ctx: &egui::Context) {
+        let base_id = Id::new("collection_listing");
+
+        self.collection_listings
+            .retain(|window_details| window_details.visible);
+
+        for (listing_index, window_details) in self.collection_listings.iter_mut().enumerate() {
+            let window_id = base_id.with(listing_index);
+
+            egui::Window::new(&window_details.title)
+                .id(window_id)
+                .open(&mut window_details.visible)
+                .scroll2([true, true])
+                .show(ctx, |ui| {
+                    // Version Details
+                    ui.horizontal(|ui| {
+                        ui.label("Version");
+                        ui.label(window_details.data.version.to_string());
+                    });
+
+                    // Beatmaps in Collections
+                    for (collection_index, collection) in
+                        window_details.data.collections.iter().enumerate()
+                    {
+                        let collection_id = window_id.with(collection_index);
+
+                        egui::CollapsingHeader::new(optional_string(&collection.name))
+                            .id_source(collection_id)
+                            .show(ui, |ui| {
+                                for md5 in collection
+                                    .beatmap_md5s
+                                    .iter()
+                                    .filter_map(|md5| md5.as_ref())
+                                {
+                                    if let Some((beatmap_index, beatmap)) = self
+                                        .md5_mapping
+                                        .get(md5)
+                                        .map(|i| {
+                                            self.beatmap_listing
+                                                .as_ref()
+                                                .map(|listing| {
+                                                    listing.beatmaps.get(*i).map(|b| (i, b))
+                                                })
+                                                .flatten()
+                                        })
+                                        .flatten()
+                                    {
+                                        let name = format!(
+                                            "{} - {} [{}]",
+                                            &beatmap.artist_name.clone().unwrap_or_default(),
+                                            &beatmap.song_title.clone().unwrap_or_default(),
+                                            &beatmap.difficulty.clone().unwrap_or_default()
+                                        );
+
+                                        if ui.button(&name).clicked() {
+                                            self.displayed_beatmaps.insert(
+                                                *beatmap_index,
+                                                WindowDetails {
+                                                    visible: true,
+                                                    title: name,
+                                                    data: (),
+                                                },
+                                            );
+                                        }
+                                    } else {
+                                        ui.add_enabled(
+                                            false,
+                                            egui::Button::new(format!("Unknown (MD5: {})", md5)),
+                                        );
+                                    }
+                                }
+                            });
+                    }
+                });
         }
     }
 
