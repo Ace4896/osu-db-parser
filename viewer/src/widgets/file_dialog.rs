@@ -25,12 +25,4 @@ impl FileDialog {
     pub fn get(&mut self) -> Option<Vec<u8>> {
         std::mem::replace(&mut self.file, None)
     }
-
-    pub fn save(&self, filename: &str, file: Vec<u8>) {
-        let path = rfd::FileDialog::new().set_file_name(filename).save_file();
-
-        if let Some(path) = path {
-            std::fs::write(path, file).ok();
-        }
-    }
 }

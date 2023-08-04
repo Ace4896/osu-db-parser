@@ -2,10 +2,10 @@
 //!
 //! Based on the implementation from [kirjavascript/trueLMAO](https://github.com/kirjavascript/trueLMAO/tree/master).
 
-use js_sys::{Array, ArrayBuffer, Uint8Array};
+use js_sys::{ArrayBuffer, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{window, File, FileReader, HtmlInputElement, Url};
+use web_sys::{window, FileReader, HtmlInputElement};
 
 pub struct FileDialog {
     tx: std::sync::mpsc::Sender<Vec<u8>>,
@@ -91,23 +91,6 @@ impl FileDialog {
             Some(file)
         } else {
             None
-        }
-    }
-
-    pub fn save(&self, filename: &str, filedata: Vec<u8>) {
-        let array = Uint8Array::from(filedata.as_slice());
-        let blob_parts = Array::new();
-        blob_parts.push(&array.buffer());
-
-        let file = File::new_with_blob_sequence_and_options(
-            &blob_parts.into(),
-            filename,
-            web_sys::FilePropertyBag::new().type_("application/octet-stream"),
-        )
-        .unwrap();
-        let url = Url::create_object_url_with_blob(&file);
-        if let Some(window) = web_sys::window() {
-            window.location().set_href(&url.unwrap()).ok();
         }
     }
 }
