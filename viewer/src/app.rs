@@ -12,6 +12,7 @@ pub struct MainApp {
 
     beatmap_listing: Option<BeatmapListing>,
     displayed_beatmaps: HashMap<usize, WindowDetails<()>>,
+    md5_mapping: HashMap<String, usize>,
 
     collection_listings: Vec<WindowDetails<CollectionListing>>,
     score_listings: Vec<WindowDetails<ScoreListing>>,
@@ -42,6 +43,7 @@ impl Default for MainApp {
 
             beatmap_listing: None,
             displayed_beatmaps: HashMap::new(),
+            md5_mapping: HashMap::new(),
 
             collection_listings: Vec::new(),
             score_listings: Vec::new(),
@@ -66,16 +68,29 @@ impl MainApp {
         if let Some(file_operation) = self.pending_file_operation {
             if let Some(data) = self.file_dialog.get() {
                 match file_operation {
-                    FileOperation::GetBeatmapListing => match BeatmapListing::from_bytes(&data) {
-                        Ok(beatmap_listing) => {
-                            self.beatmap_listing = Some(beatmap_listing);
-                            self.displayed_beatmaps.clear();
+                    FileOperation::GetBeatmapListing => {
+                        match BeatmapListing::from_bytes(&data) {
+                            Ok(beatmap_listing) => {
+                                // Update the MD5 mapping with all non-empty hash strings
+                                self.md5_mapping = beatmap_listing
+                                    .beatmaps
+                                    .iter()
+                                    .enumerate()
+                                    .filter_map(|(i, b)| {
+                                        b.md5
+                                            .as_ref()
+                                            .filter(|md5| !md5.is_empty())
+                                            .map(|md5| (md5.to_string(), i))
+                                    })
+                                    .collect();
 
-                            // TODO: Refresh details for any open collections, scores, replays
-                            // These rely on MD5 hashes, which may or may not be present in this new beatmap listing
+                                // Update the currently displayed values
+                                self.beatmap_listing = Some(beatmap_listing);
+                                self.displayed_beatmaps.clear();
+                            }
+                            Err(e) => log::warn!("Unable to open beatmap listing: {}", e),
                         }
-                        Err(e) => log::warn!("Unable to open beatmap listing: {}", e),
-                    },
+                    }
                     FileOperation::GetCollectionListing => {
                         match CollectionListing::from_bytes(&data) {
                             Ok(collection_listing) => {
@@ -140,13 +155,13 @@ impl MainApp {
                             self.file_dialog.open();
                             ui.close_menu();
                         }
-    
+
                         if ui.button("Open scores.db...").clicked() {
                             self.pending_file_operation = Some(GetScoreListing);
                             self.file_dialog.open();
                             ui.close_menu();
                         }
-    
+
                         if ui.button("Open .osr replay...").clicked() {
                             self.pending_file_operation = Some(GetReplay);
                             self.file_dialog.open();
