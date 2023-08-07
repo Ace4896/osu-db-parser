@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use egui::Id;
 use osu_db_parser::prelude::*;
 
 use super::{beatmap_details::BeatmapDetailsWindow, score_details::ScoreDetailsWindow};
@@ -10,7 +11,7 @@ pub struct BeatmapListingView {
     data: Option<BeatmapListing>,
     selected_beatmap_md5: Option<String>,
 
-    beatmap_windows: Vec<BeatmapDetailsWindow>,
+    beatmap_windows: HashMap<String, BeatmapDetailsWindow>,
     score_windows: Vec<ScoreDetailsWindow>,
 }
 
@@ -24,11 +25,11 @@ impl BeatmapListingView {
     /// Renders the beatmap listing view.
     pub fn view(&mut self, ctx: &egui::Context, scores: &HashMap<String, Vec<ScoreReplay>>) {
         // Unload any closed windows
-        self.beatmap_windows.retain(|w| w.visible);
+        self.beatmap_windows.retain(|_, w| w.visible);
         self.score_windows.retain(|w| w.visible);
 
         // Show the remaining windows
-        for beatmap_window in self.beatmap_windows.iter_mut() {
+        for beatmap_window in self.beatmap_windows.values_mut() {
             beatmap_window.view(ctx);
         }
 
@@ -98,18 +99,41 @@ impl BeatmapListingView {
                             |ui, row_range| {
                                 for i in row_range {
                                     let beatmap = &beatmap_listing.beatmaps[i];
-                                    let header = format!(
-                                        "{} - {} [{}]",
-                                        &beatmap.artist_name.clone().unwrap_or_default(),
-                                        &beatmap.song_title.clone().unwrap_or_default(),
-                                        &beatmap.difficulty.clone().unwrap_or_default()
-                                    );
+                                    let md5 = beatmap.md5.clone().unwrap_or_default();
 
-                                    ui.selectable_value(
-                                        &mut self.selected_beatmap_md5,
-                                        Some(beatmap.md5.clone().unwrap_or_default()),
-                                        &header,
-                                    );
+                                    // Beatmaps without an MD5 are invalid - most likely a corrupt DB
+                                    if !md5.is_empty() {
+                                        let header = format!(
+                                            "{} - {} [{}]",
+                                            &beatmap.artist_name.clone().unwrap_or_default(),
+                                            &beatmap.song_title.clone().unwrap_or_default(),
+                                            &beatmap.difficulty.clone().unwrap_or_default()
+                                        );
+
+                                        ui.selectable_value(
+                                            &mut self.selected_beatmap_md5,
+                                            Some(beatmap.md5.clone().unwrap_or_default()),
+                                            &header,
+                                        )
+                                        .context_menu(
+                                            |ui| {
+                                                if ui.button("Details").clicked() {
+                                                    self.beatmap_windows.insert(
+                                                        md5,
+                                                        BeatmapDetailsWindow {
+                                                            id: Id::new("b_beatmap_details")
+                                                                .with(i),
+                                                            title: header,
+                                                            visible: true,
+                                                            data: beatmap.clone(),
+                                                        },
+                                                    );
+
+                                                    ui.close_menu();
+                                                }
+                                            },
+                                        );
+                                    }
                                 }
                             },
                         );

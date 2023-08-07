@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use egui::Id;
 use osu_db_parser::prelude::*;
 
 use super::{beatmap_details::BeatmapDetailsWindow, score_details::ScoreDetailsWindow};
@@ -11,7 +12,7 @@ pub struct CollectionListingView {
     selected_collection: Option<usize>,
     selected_beatmap_md5: Option<String>,
 
-    beatmap_windows: Vec<BeatmapDetailsWindow>,
+    beatmap_windows: HashMap<String, BeatmapDetailsWindow>,
     score_windows: Vec<ScoreDetailsWindow>,
 }
 
@@ -31,11 +32,11 @@ impl CollectionListingView {
         scores: &HashMap<String, Vec<ScoreReplay>>,
     ) {
         // Unload any closed windows
-        self.beatmap_windows.retain(|w| w.visible);
+        self.beatmap_windows.retain(|_, w| w.visible);
         self.score_windows.retain(|w| w.visible);
 
         // Show the remaining windows
-        for beatmap_window in self.beatmap_windows.iter_mut() {
+        for beatmap_window in self.beatmap_windows.values_mut() {
             beatmap_window.view(ctx);
         }
 
@@ -100,9 +101,9 @@ impl CollectionListingView {
                             row_height,
                             collection.beatmap_md5s.len(),
                             |ui, row_range| {
-                                // Display beatmap names from non-empty MD5s
-                                for row in row_range {
-                                    if let Some(md5) = collection.beatmap_md5s[row]
+                                // Beatmaps references without an MD5 are invalid - most likely a corrupt DB
+                                for i in row_range {
+                                    if let Some(md5) = collection.beatmap_md5s[i]
                                         .as_ref()
                                         .filter(|md5| !md5.is_empty())
                                     {
@@ -117,8 +118,24 @@ impl CollectionListingView {
                                             ui.selectable_value(
                                                 &mut self.selected_beatmap_md5,
                                                 Some(md5.clone()),
-                                                name,
-                                            );
+                                                &name,
+                                            )
+                                            .context_menu(|ui| {
+                                                if ui.button("Details").clicked() {
+                                                    self.beatmap_windows.insert(
+                                                        md5.clone(),
+                                                        BeatmapDetailsWindow {
+                                                            id: Id::new("c_beatmap_details")
+                                                                .with(i),
+                                                            title: name,
+                                                            visible: true,
+                                                            data: beatmap.clone(),
+                                                        },
+                                                    );
+
+                                                    ui.close_menu();
+                                                }
+                                            });
                                         } else {
                                             ui.add_enabled(
                                                 false,
