@@ -1,54 +1,59 @@
 use std::collections::HashMap;
 
-use egui::Id;
 use osu_db_parser::prelude::*;
 
-use super::beatmap_details::BeatmapDetailsWindow;
+use super::{beatmap_details::BeatmapDetailsWindow, score_details::ScoreDetailsWindow};
 
 /// A view for displaying beatmap listing details.
 #[derive(Default)]
 pub struct BeatmapListingView {
-    pub beatmap_listing: Option<BeatmapListing>,
-    pub md5_mapping: HashMap<String, usize>,
+    data: Option<BeatmapListing>,
+    selected_beatmap_md5: Option<String>,
 
-    displayed_beatmaps: HashMap<usize, BeatmapDetailsWindow>,
+    beatmap_windows: Vec<BeatmapDetailsWindow>,
+    score_windows: Vec<ScoreDetailsWindow>,
 }
 
 impl BeatmapListingView {
     /// Loads a beatmap listing into this view.
     pub fn load_beatmap_listing(&mut self, beatmap_listing: BeatmapListing) {
-        // Setup MD5 mapping
-        self.md5_mapping = beatmap_listing
-            .beatmaps
-            .iter()
-            .enumerate()
-            .filter_map(|(i, beatmap)| beatmap.md5.as_ref().map(|md5| (md5.to_string(), i)))
-            .collect();
-
-        // Load beatmap listing and clear any previously displayed beatmaps (as they are now invalid)
-        self.beatmap_listing = Some(beatmap_listing);
-        self.displayed_beatmaps.clear();
+        self.data = Some(beatmap_listing);
+        self.selected_beatmap_md5 = None;
     }
 
     /// Renders the beatmap listing view.
-    pub fn view(&mut self, ctx: &egui::Context) {
-        let base_window_id = Id::new("b_beatmap_details");
-        self.displayed_beatmaps.retain(|_, window| window.visible);
+    pub fn view(&mut self, ctx: &egui::Context, scores: &HashMap<String, Vec<ScoreReplay>>) {
+        // Unload any closed windows
+        self.beatmap_windows.retain(|w| w.visible);
+        self.score_windows.retain(|w| w.visible);
 
-        for (i, beatmap_details_window) in self.displayed_beatmaps.iter_mut() {
-            if let Some(beatmap) = self
-                .beatmap_listing
-                .as_ref()
-                .and_then(|listing| listing.beatmaps.get(*i))
-            {
-                beatmap_details_window.view(ctx, base_window_id.with(*i), beatmap);
-            }
+        // Show the remaining windows
+        for beatmap_window in self.beatmap_windows.iter_mut() {
+            beatmap_window.view(ctx);
         }
 
+        for score_window in self.score_windows.iter_mut() {
+            score_window.view(ctx);
+        }
+
+        // Render the left panel showing scores for the selected beatmap
+        egui::SidePanel::left("b_beatmap_scores").show_animated(
+            ctx,
+            self.selected_beatmap_md5
+                .as_ref()
+                .is_some_and(|md5| !md5.is_empty()),
+            |ui| {
+                ui.heading("Local Scores");
+
+                // TODO: Show local scores
+            },
+        );
+
+        // Render the central panel showing listing details + beatmaps
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Beatmap Listing");
 
-            if let Some(beatmap_listing) = &self.beatmap_listing {
+            if let Some(beatmap_listing) = &self.data {
                 // Base Details
                 egui::Grid::new("base_details").show(ui, |ui| {
                     ui.label("Version");
@@ -100,15 +105,11 @@ impl BeatmapListingView {
                                         &beatmap.difficulty.clone().unwrap_or_default()
                                     );
 
-                                    if ui.small_button(&header).clicked() {
-                                        self.displayed_beatmaps.insert(
-                                            i,
-                                            BeatmapDetailsWindow {
-                                                title: header,
-                                                visible: true,
-                                            },
-                                        );
-                                    }
+                                    ui.selectable_value(
+                                        &mut self.selected_beatmap_md5,
+                                        Some(beatmap.md5.clone().unwrap_or_default()),
+                                        &header,
+                                    );
                                 }
                             },
                         );

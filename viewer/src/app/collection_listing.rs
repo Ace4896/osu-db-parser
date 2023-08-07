@@ -1,98 +1,137 @@
 use std::collections::HashMap;
 
-use egui::Id;
 use osu_db_parser::prelude::*;
 
-use super::{beatmap_details::BeatmapDetailsWindow, optional_string};
+use super::{beatmap_details::BeatmapDetailsWindow, score_details::ScoreDetailsWindow};
 
 /// A view for displaying collection listing details.
 #[derive(Default)]
 pub struct CollectionListingView {
-    collection_listing: Option<CollectionListing>,
-    displayed_beatmaps: HashMap<usize, BeatmapDetailsWindow>,
+    data: Option<CollectionListing>,
+    selected_collection: Option<usize>,
+    selected_beatmap_md5: Option<String>,
+
+    beatmap_windows: Vec<BeatmapDetailsWindow>,
+    score_windows: Vec<ScoreDetailsWindow>,
 }
 
 impl CollectionListingView {
     /// Loads a collection listing into this view.
     pub fn load_collection_listing(&mut self, collection_listing: CollectionListing) {
-        self.collection_listing = Some(collection_listing);
-        self.clear_displayed_beatmaps();
-    }
-
-    /// Clears the list of displayed beatmaps. Needs to be called when the beatmap listing changes.
-    pub fn clear_displayed_beatmaps(&mut self) {
-        self.displayed_beatmaps.clear();
+        self.data = Some(collection_listing);
+        self.selected_collection = None;
+        self.selected_beatmap_md5 = None;
     }
 
     /// Renders the collection listing view using the specified beatmap listing details.
     pub fn view(
         &mut self,
         ctx: &egui::Context,
-        beatmap_listing: &BeatmapListing,
-        md5_mapping: &HashMap<String, usize>,
+        beatmaps: &HashMap<String, BeatmapEntry>,
+        scores: &HashMap<String, Vec<ScoreReplay>>,
     ) {
-        let base_window_id = Id::new("c_beatmap_details");
-        self.displayed_beatmaps.retain(|_, window| window.visible);
+        // Unload any closed windows
+        self.beatmap_windows.retain(|w| w.visible);
+        self.score_windows.retain(|w| w.visible);
 
-        for (i, beatmap_details_window) in self.displayed_beatmaps.iter_mut() {
-            if let Some(beatmap) = beatmap_listing.beatmaps.get(*i) {
-                beatmap_details_window.view(ctx, base_window_id.with(*i), beatmap);
-            }
+        // Show the remaining windows
+        for beatmap_window in self.beatmap_windows.iter_mut() {
+            beatmap_window.view(ctx);
         }
 
+        for score_window in self.score_windows.iter_mut() {
+            score_window.view(ctx);
+        }
+
+        // Render the left panel showing scores for the selected beatmap
+        egui::SidePanel::left("c_beatmap_scores").show_animated(
+            ctx,
+            self.selected_beatmap_md5
+                .as_ref()
+                .is_some_and(|md5| !md5.is_empty()),
+            |ui| {
+                ui.heading("Local Scores");
+
+                // TODO: Show local scores
+            },
+        );
+
+        // Render the central panel showing collections + beatmaps
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Collection Listing");
 
-            if let Some(collection_listing) = &self.collection_listing {
+            if let Some(collection_listing) = &self.data {
                 // Version Details
                 ui.horizontal(|ui| {
                     ui.label("Version");
                     ui.label(collection_listing.version.to_string());
                 });
 
-                // Beatmaps in Collections
-                for (collection_index, collection) in
-                    collection_listing.collections.iter().enumerate()
+                // Available Collections
+                egui::ComboBox::from_id_source("available_collections")
+                    .width(ui.available_width())
+                    .selected_text(
+                        self.selected_collection
+                            .and_then(|i| collection_listing.collections.get(i))
+                            .and_then(|collection| collection.name.as_ref().map(|n| n.as_str()))
+                            .unwrap_or_else(|| "Select collection..."),
+                    )
+                    .show_ui(ui, |ui| {
+                        for (i, collection) in collection_listing.collections.iter().enumerate() {
+                            ui.selectable_value(
+                                &mut self.selected_collection,
+                                Some(i),
+                                collection.name.clone().unwrap_or_default(),
+                            );
+                        }
+                    });
+
+                // Beatmaps in Current Collection
+                if let Some(collection) = self
+                    .selected_collection
+                    .and_then(|i| collection_listing.collections.get(i))
                 {
-                    let collection_id = Id::new(collection_index);
+                    let row_height = ui.text_style_height(&egui::TextStyle::Body);
 
-                    egui::CollapsingHeader::new(optional_string(&collection.name))
-                        .id_source(collection_id)
-                        .show(ui, |ui| {
-                            for md5 in collection
-                                .beatmap_md5s
-                                .iter()
-                                .filter_map(|md5| md5.as_ref())
-                            {
-                                if let Some((beatmap_index, beatmap)) = md5_mapping
-                                    .get(md5)
-                                    .map(|i| beatmap_listing.beatmaps.get(*i).map(|b| (i, b)))
-                                    .flatten()
-                                {
-                                    let name = format!(
-                                        "{} - {} [{}]",
-                                        &beatmap.artist_name.clone().unwrap_or_default(),
-                                        &beatmap.song_title.clone().unwrap_or_default(),
-                                        &beatmap.difficulty.clone().unwrap_or_default()
-                                    );
+                    egui::ScrollArea::both()
+                        .auto_shrink([false, false])
+                        .show_rows(
+                            ui,
+                            row_height,
+                            collection.beatmap_md5s.len(),
+                            |ui, row_range| {
+                                // Display beatmap names from non-empty MD5s
+                                for row in row_range {
+                                    if let Some(md5) = collection.beatmap_md5s[row]
+                                        .as_ref()
+                                        .filter(|md5| !md5.is_empty())
+                                    {
+                                        if let Some(beatmap) = beatmaps.get(md5) {
+                                            let name = format!(
+                                                "{} - {} [{}]",
+                                                &beatmap.artist_name.clone().unwrap_or_default(),
+                                                &beatmap.song_title.clone().unwrap_or_default(),
+                                                &beatmap.difficulty.clone().unwrap_or_default()
+                                            );
 
-                                    if ui.button(&name).clicked() {
-                                        self.displayed_beatmaps.insert(
-                                            *beatmap_index,
-                                            BeatmapDetailsWindow {
-                                                title: name,
-                                                visible: true,
-                                            },
-                                        );
+                                            ui.selectable_value(
+                                                &mut self.selected_beatmap_md5,
+                                                Some(md5.clone()),
+                                                name,
+                                            );
+                                        } else {
+                                            ui.add_enabled(
+                                                false,
+                                                egui::SelectableLabel::new(
+                                                    false,
+                                                    format!("Unknown (MD5: {})", md5),
+                                                ),
+                                            );
+                                        }
                                     }
-                                } else {
-                                    ui.add_enabled(
-                                        false,
-                                        egui::Button::new(format!("Unknown (MD5: {})", md5)),
-                                    );
                                 }
-                            }
-                        });
+                            },
+                        );
                 }
             } else {
                 ui.label("No collection listing loaded...");

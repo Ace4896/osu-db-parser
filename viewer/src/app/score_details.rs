@@ -3,18 +3,20 @@ use osu_db_parser::prelude::*;
 
 /// A window for displaying score details.
 pub struct ScoreDetailsWindow {
+    pub id: Id,
     pub title: String,
     pub visible: bool,
-    pub beatmap_index: usize,
+    pub data: ScoreReplay,
 }
 
 impl ScoreDetailsWindow {
-    pub fn view(&mut self, ctx: &egui::Context, window_id: Id, score_replay: &ScoreReplay) {
+    /// Renders this window to display score/replay details.
+    pub fn view(&mut self, ctx: &egui::Context) {
         egui::Window::new(&self.title)
-            .id(window_id)
+            .id(self.id)
             .open(&mut self.visible)
             .show(ctx, |ui| {
-                // TODO: Score details
+                // TODO: Score/replay details
             });
     }
 }

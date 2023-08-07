@@ -1,42 +1,35 @@
+use std::collections::HashMap;
+
 use osu_db_parser::prelude::*;
 
 use crate::widgets::file_dialog::FileDialog;
 
 use self::{
     beatmap_listing::BeatmapListingView, collection_listing::CollectionListingView,
-    score_listing::ScoreListingView,
+    replays::ReplaysView,
 };
 
 mod beatmap_details;
 mod beatmap_listing;
 mod collection_listing;
-mod replay;
+mod replays;
 mod score_details;
-mod score_listing;
-
-// TODO: Simplified layout (again):
-//
-// - Display separate windows for:
-//   - Score (from score listing)
-//   - Replays (manually opened)
 
 /// Holds the state for the main application.
 pub struct MainApp {
+    // File Loading
     file_dialog: FileDialog,
     pending_file_operation: Option<FileOperation>,
 
+    // Views
     current_view: ViewType,
-    beatmap_listing_view: BeatmapListingView,
-    collection_listing_view: CollectionListingView,
-    score_listing_view: ScoreListingView,
-    replays: Vec<WindowDetails<ScoreReplay>>,
-}
+    beatmap_listing: BeatmapListingView,
+    collection_listing: CollectionListingView,
+    replays: ReplaysView,
 
-/// Represents generic window details for a value.
-pub struct WindowDetails<T> {
-    visible: bool,
-    title: String,
-    data: T,
+    // MD5 Lookups
+    beatmaps: HashMap<String, BeatmapEntry>,
+    scores: HashMap<String, Vec<ScoreReplay>>,
 }
 
 /// Represents the different 'tabs' that can be navigated to.
@@ -44,7 +37,6 @@ pub struct WindowDetails<T> {
 enum ViewType {
     BeatmapListing,
     CollectionListing,
-    ScoreListing,
     Replays,
 }
 
@@ -64,10 +56,12 @@ impl Default for MainApp {
             pending_file_operation: None,
 
             current_view: ViewType::BeatmapListing,
-            beatmap_listing_view: BeatmapListingView::default(),
-            collection_listing_view: CollectionListingView::default(),
-            score_listing_view: ScoreListingView::default(),
-            replays: Vec::new(),
+            beatmap_listing: BeatmapListingView::default(),
+            collection_listing: CollectionListingView::default(),
+            replays: ReplaysView::default(),
+
+            beatmaps: HashMap::new(),
+            scores: HashMap::new(),
         }
     }
 }
@@ -77,21 +71,14 @@ impl eframe::App for MainApp {
         self.check_for_files();
         self.menu_bar(ctx, frame);
 
-        match (
-            self.current_view,
-            &self.beatmap_listing_view.beatmap_listing,
-        ) {
-            (ViewType::BeatmapListing, _) => self.beatmap_listing_view.view(ctx),
-            (ViewType::CollectionListing, Some(beatmap_listing)) => self
-                .collection_listing_view
-                .view(ctx, beatmap_listing, &self.beatmap_listing_view.md5_mapping),
-            (ViewType::ScoreListing, Some(beatmap_listing)) => self.score_listing_view.view(
-                ctx,
-                beatmap_listing,
-                &self.beatmap_listing_view.md5_mapping,
-            ),
-            (ViewType::Replays, Some(_)) => todo!(),
-            _ => {}
+        // Determine which view to show
+        match self.current_view {
+            ViewType::BeatmapListing => self.beatmap_listing.view(ctx, &self.scores),
+            ViewType::CollectionListing => {
+                self.collection_listing
+                    .view(ctx, &self.beatmaps, &self.scores)
+            }
+            ViewType::Replays => self.replays.view(ctx),
         }
     }
 }
@@ -102,42 +89,59 @@ impl MainApp {
         if let Some(file_operation) = self.pending_file_operation {
             if let Some(data) = self.file_dialog.get() {
                 match file_operation {
-                    FileOperation::GetBeatmapListing => {
-                        match BeatmapListing::from_bytes(&data) {
-                            Ok(beatmap_listing) => {
-                                // Update the currently displayed values
-                                self.beatmap_listing_view
-                                    .load_beatmap_listing(beatmap_listing);
+                    FileOperation::GetBeatmapListing => match BeatmapListing::from_bytes(&data) {
+                        Ok(beatmap_listing) => {
+                            // Setup the MD5 mapping for the loaded beatmaps
+                            self.beatmaps = beatmap_listing
+                                .beatmaps
+                                .iter()
+                                .filter_map(|b| b.md5.as_ref().map(|md5| (md5.clone(), b.clone())))
+                                .collect();
 
-                                // Clear any currently displayed beatmaps
-                                self.collection_listing_view.clear_displayed_beatmaps();
-                            }
-                            Err(e) => log::warn!("Unable to open beatmap listing: {}", e),
+                            // Update any window titles for the replays view
+                            self.replays.update_replay_titles(&self.beatmaps);
+
+                            // Load the beatmap listing and change views
+                            self.beatmap_listing.load_beatmap_listing(beatmap_listing);
+                            self.current_view = ViewType::BeatmapListing;
                         }
-                    }
+                        Err(e) => log::warn!("Unable to open beatmap listing: {}", e),
+                    },
                     FileOperation::GetCollectionListing => {
                         match CollectionListing::from_bytes(&data) {
                             Ok(collection_listing) => {
-                                self.collection_listing_view
+                                self.collection_listing
                                     .load_collection_listing(collection_listing);
+                                self.current_view = ViewType::CollectionListing;
                             }
                             Err(e) => log::warn!("Unable to open collection listing: {}", e),
                         }
                     }
                     FileOperation::GetScoreListing => match ScoreListing::from_bytes(&data) {
                         Ok(score_listing) => {
-                            self.score_listing_view.load_score_listing(score_listing);
+                            log::info!(
+                                "Successfully loaded scores.db (version: {})",
+                                score_listing.version
+                            );
+
+                            // Setup the MD5 mapping for the loaded scores
+                            self.scores = score_listing
+                                .beatmap_scores
+                                .into_iter()
+                                .filter_map(|s| s.md5.map(|md5| (md5, s.scores)))
+                                .collect();
                         }
                         Err(e) => log::warn!("Unable to open score listing: {}", e),
                     },
                     FileOperation::GetReplay => match ScoreReplay::from_bytes(&data) {
                         Ok(replay) => {
-                            let title = format!("Replay #{}", self.replays.len());
-                            self.replays.push(WindowDetails {
-                                visible: true,
-                                title,
-                                data: replay,
-                            });
+                            log::info!(
+                                "Successfully loaded .osr replay (version: {})",
+                                replay.version
+                            );
+
+                            self.replays.load_replay(replay, &self.beatmaps);
+                            self.current_view = ViewType::Replays;
                         }
                         Err(e) => log::warn!("Unable to open replay file: {}", e),
                     },
@@ -161,25 +165,23 @@ impl MainApp {
                         ui.close_menu();
                     }
 
-                    ui.add_enabled_ui(self.beatmap_listing_view.beatmap_listing.is_some(), |ui| {
-                        if ui.button("Open collection.db...").clicked() {
-                            self.pending_file_operation = Some(GetCollectionListing);
-                            self.file_dialog.open();
-                            ui.close_menu();
-                        }
+                    if ui.button("Open collection.db...").clicked() {
+                        self.pending_file_operation = Some(GetCollectionListing);
+                        self.file_dialog.open();
+                        ui.close_menu();
+                    }
 
-                        if ui.button("Open scores.db...").clicked() {
-                            self.pending_file_operation = Some(GetScoreListing);
-                            self.file_dialog.open();
-                            ui.close_menu();
-                        }
+                    if ui.button("Open scores.db...").clicked() {
+                        self.pending_file_operation = Some(GetScoreListing);
+                        self.file_dialog.open();
+                        ui.close_menu();
+                    }
 
-                        if ui.button("Open .osr replay...").clicked() {
-                            self.pending_file_operation = Some(GetReplay);
-                            self.file_dialog.open();
-                            ui.close_menu();
-                        }
-                    });
+                    if ui.button("Open .osr replay...").clicked() {
+                        self.pending_file_operation = Some(GetReplay);
+                        self.file_dialog.open();
+                        ui.close_menu();
+                    }
 
                     #[cfg(not(target_arch = "wasm32"))]
                     {
@@ -199,21 +201,13 @@ impl MainApp {
                     "Beatmap Listing",
                 );
 
-                ui.add_enabled_ui(self.beatmap_listing_view.beatmap_listing.is_some(), |ui| {
-                    ui.selectable_value(
-                        &mut self.current_view,
-                        ViewType::CollectionListing,
-                        "Collection Listing",
-                    );
+                ui.selectable_value(
+                    &mut self.current_view,
+                    ViewType::CollectionListing,
+                    "Collection Listing",
+                );
 
-                    ui.selectable_value(
-                        &mut self.current_view,
-                        ViewType::ScoreListing,
-                        "Score Listing",
-                    );
-
-                    ui.selectable_value(&mut self.current_view, ViewType::Replays, "Replays");
-                });
+                ui.selectable_value(&mut self.current_view, ViewType::Replays, "Replays");
             });
         });
     }
