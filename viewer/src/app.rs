@@ -223,9 +223,18 @@ impl MainApp {
     }
 }
 
-/// Renders an unsigned value that acts as -1 when it is the maximum value.
-fn maybe_signed(val: u32) -> egui::WidgetText {
+/// Renders an unsigned u32 value that acts as -1 when it is the maximum value.
+fn maybe_signed_u32(val: u32) -> egui::WidgetText {
     if val == 0xFFFFFFFF {
+        "-1".into()
+    } else {
+        val.to_string().into()
+    }
+}
+
+/// Renders an unsigned u64 value that acts as -1 when it is the maximum value.
+fn maybe_signed_u64(val: u64) -> egui::WidgetText {
+    if val == u64::MAX {
         "-1".into()
     } else {
         val.to_string().into()

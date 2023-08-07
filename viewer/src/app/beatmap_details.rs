@@ -1,7 +1,7 @@
 use egui::Id;
 use osu_db_parser::prelude::*;
 
-use super::{maybe_signed, optional_string};
+use super::{maybe_signed_u32, optional_string};
 
 /// A window for displaying beatmap details.
 pub struct BeatmapDetailsWindow {
@@ -119,15 +119,15 @@ impl BeatmapDetailsWindow {
                             // TODO: Timing points
 
                             ui.label("Difficulty ID");
-                            ui.label(maybe_signed(self.data.difficulty_id));
+                            ui.label(maybe_signed_u32(self.data.difficulty_id));
                             ui.end_row();
 
                             ui.label("Beatmap ID");
-                            ui.label(maybe_signed(self.data.beatmap_id));
+                            ui.label(maybe_signed_u32(self.data.beatmap_id));
                             ui.end_row();
 
                             ui.label("Thread ID");
-                            ui.label(maybe_signed(self.data.thread_id));
+                            ui.label(maybe_signed_u32(self.data.thread_id));
                             ui.end_row();
 
                             ui.label("Grade (Standard)");
