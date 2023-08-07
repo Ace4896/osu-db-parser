@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
+use egui::Id;
 use osu_db_parser::prelude::*;
 
 use crate::widgets::file_dialog::FileDialog;
 
 use self::{
     beatmap_listing::BeatmapListingView, collection_listing::CollectionListingView,
-    replays::ReplaysView,
+    replays::ReplaysView, score_details::ScoreDetailsWindow,
 };
 
 mod beatmap_details;
@@ -130,6 +131,15 @@ impl MainApp {
                                 .into_iter()
                                 .filter_map(|s| s.md5.map(|md5| (md5, s.scores)))
                                 .collect();
+
+                            // Order each beatmap's scores by descending score, then ascending date
+                            for beatmap_scores in self.scores.values_mut() {
+                                beatmap_scores.sort_unstable_by(|a, b| {
+                                    b.score
+                                        .cmp(&a.score)
+                                        .then_with(|| a.timestamp.cmp(&b.timestamp))
+                                });
+                            }
                         }
                         Err(e) => log::warn!("Unable to open score listing: {}", e),
                     },
@@ -229,4 +239,46 @@ fn optional_string<T: std::fmt::Display>(value: &Option<T>) -> egui::WidgetText 
     } else {
         egui::RichText::new("N/A").italics().into()
     }
+}
+
+/// Renders a leaderboard of scores for a particular beatmap.
+/// Assumes that the score values are sorted in descending order.
+fn leaderboard(
+    ui: &mut egui::Ui,
+    scores: &Vec<ScoreReplay>,
+    score_windows: &mut HashMap<String, ScoreDetailsWindow>,
+) {
+    let row_height = ui.text_style_height(&egui::TextStyle::Body);
+
+    egui::ScrollArea::both()
+        .auto_shrink([false, true])
+        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
+        .show_rows(ui, row_height, scores.len(), |ui, row_range| {
+            for i in row_range {
+                // Replays should have an MD5 hash
+                let details = &scores[i];
+                if let Some(replay_md5) = &details.replay_md5 {
+                    // TODO: Mod combination
+                    // TODO: Accuracy isn't stored in the replay - seems to be calculated from the number of hits
+                    let label = format!(
+                        "{}: {} - {}",
+                        i + 1,
+                        details.player_name.clone().unwrap_or_default(),
+                        details.score
+                    );
+
+                    if ui.selectable_label(false, &label).clicked() {
+                        score_windows.insert(
+                            replay_md5.to_string(),
+                            ScoreDetailsWindow {
+                                id: Id::new("score_details").with(i),
+                                title: label,
+                                visible: true,
+                                data: details.clone(),
+                            },
+                        );
+                    };
+                }
+            }
+        });
 }

@@ -13,7 +13,7 @@ pub struct CollectionListingView {
     selected_beatmap_md5: Option<String>,
 
     beatmap_windows: HashMap<String, BeatmapDetailsWindow>,
-    score_windows: Vec<ScoreDetailsWindow>,
+    score_windows: HashMap<String, ScoreDetailsWindow>,
 }
 
 impl CollectionListingView {
@@ -33,27 +33,34 @@ impl CollectionListingView {
     ) {
         // Unload any closed windows
         self.beatmap_windows.retain(|_, w| w.visible);
-        self.score_windows.retain(|w| w.visible);
+        self.score_windows.retain(|_, w| w.visible);
 
         // Show the remaining windows
         for beatmap_window in self.beatmap_windows.values_mut() {
             beatmap_window.view(ctx);
         }
 
-        for score_window in self.score_windows.iter_mut() {
+        for score_window in self.score_windows.values_mut() {
             score_window.view(ctx);
         }
 
         // Render the left panel showing scores for the selected beatmap
-        egui::SidePanel::left("c_beatmap_scores").show_animated(
+        egui::SidePanel::left("b_beatmap_scores").show_animated(
             ctx,
-            self.selected_beatmap_md5
-                .as_ref()
-                .is_some_and(|md5| !md5.is_empty()),
+            self.selected_beatmap_md5.is_some(),
             |ui| {
                 ui.heading("Local Scores");
 
-                // TODO: Show local scores
+                if let Some(scores) = &self
+                    .selected_beatmap_md5
+                    .as_ref()
+                    .and_then(|md5| scores.get(md5))
+                    .filter(|beatmap_scores| !beatmap_scores.is_empty())
+                {
+                    super::leaderboard(ui, scores, &mut self.score_windows)
+                } else {
+                    ui.label("No local scores found");
+                }
             },
         );
 
