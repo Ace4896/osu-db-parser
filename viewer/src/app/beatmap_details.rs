@@ -296,7 +296,7 @@ impl BeatmapDetailsWindow {
         let grid_id = id.with(label).with("grid");
 
         if let Some(ratings) = ratings.as_ref().filter(|r| !r.is_empty()) {
-            egui::CollapsingHeader::new("Ratings")
+            egui::CollapsingHeader::new(format!("{} Ratings", ratings.len()))
                 .id_source(header_id)
                 .show(ui, |ui| {
                     egui::Grid::new(grid_id).show(ui, |ui| {
