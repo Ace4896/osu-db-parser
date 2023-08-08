@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use egui::Id;
 use osu_db_parser::prelude::*;
 
-use super::{beatmap_details::BeatmapDetailsWindow, score_details::ScoreDetailsWindow};
+use super::{
+    beatmap_details::BeatmapDetailsWindow, open_beatmap_in_browser,
+    score_details::ScoreDetailsWindow,
+};
 
 /// A view for displaying collection listing details.
 #[derive(Default)]
@@ -140,6 +143,11 @@ impl CollectionListingView {
                                                         },
                                                     );
 
+                                                    ui.close_menu();
+                                                }
+
+                                                if ui.button("View Beatmap Online").clicked() {
+                                                    open_beatmap_in_browser(&beatmap);
                                                     ui.close_menu();
                                                 }
                                             });

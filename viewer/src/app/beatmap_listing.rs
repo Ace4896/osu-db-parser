@@ -4,7 +4,8 @@ use egui::Id;
 use osu_db_parser::prelude::*;
 
 use super::{
-    beatmap_details::BeatmapDetailsWindow, flagset_string, score_details::ScoreDetailsWindow,
+    beatmap_details::BeatmapDetailsWindow, flagset_string, open_beatmap_in_browser,
+    score_details::ScoreDetailsWindow,
 };
 
 /// A view for displaying beatmap listing details.
@@ -137,6 +138,11 @@ impl BeatmapListingView {
                                                         },
                                                     );
 
+                                                    ui.close_menu();
+                                                }
+
+                                                if ui.button("View Beatmap Online").clicked() {
+                                                    open_beatmap_in_browser(&beatmap);
                                                     ui.close_menu();
                                                 }
                                             },

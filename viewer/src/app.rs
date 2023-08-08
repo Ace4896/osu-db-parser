@@ -223,6 +223,29 @@ impl MainApp {
     }
 }
 
+/// Opens a beatmap link in the browser.
+fn open_beatmap_in_browser(beatmap: &BeatmapEntry) {
+    // Fields to populate are:
+    // - Beatmapset ID
+    // - Gameplay Mode - #osu, #taiko, #fruits, #mania
+    // - Difficulty ID
+    let url = format!(
+        "https://osu.ppy.sh/beatmapsets/{}{}/{}",
+        beatmap.beatmap_id,
+        match beatmap.gameplay_mode {
+            GameplayMode::Standard => "#osu",
+            GameplayMode::Taiko => "#taiko",
+            GameplayMode::Catch => "#fruits",
+            GameplayMode::Mania => "#mania",
+        },
+        beatmap.difficulty_id
+    );
+
+    if let Err(e) = webbrowser::open(&url) {
+        log::error!("Unable to open {}: {}", &url, e);
+    }
+}
+
 /// Renders a flagset as a more readable string.
 fn flagset_string<F: flagset::Flags>(flags: flagset::FlagSet<F>) -> String {
     flags

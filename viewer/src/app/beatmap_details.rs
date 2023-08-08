@@ -1,7 +1,7 @@
 use egui::{Id, RichText};
 use osu_db_parser::prelude::*;
 
-use super::{maybe_signed_u32, mods_string, optional_string};
+use super::{maybe_signed_u32, mods_string, open_beatmap_in_browser, optional_string};
 
 /// A window for displaying beatmap details.
 pub struct BeatmapDetailsWindow {
@@ -17,6 +17,10 @@ impl BeatmapDetailsWindow {
             .id(self.id)
             .open(&mut self.visible)
             .show(ctx, |ui| {
+                if ui.link("View Beatmap Online").clicked() {
+                    open_beatmap_in_browser(&self.data);
+                }
+
                 egui::ScrollArea::both()
                     .auto_shrink([false, true])
                     .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
