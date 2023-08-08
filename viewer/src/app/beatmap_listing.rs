@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use egui::Id;
 use osu_db_parser::prelude::*;
 
-use super::{beatmap_details::BeatmapDetailsWindow, score_details::ScoreDetailsWindow};
+use super::{
+    beatmap_details::BeatmapDetailsWindow, flagset_string, score_details::ScoreDetailsWindow,
+};
 
 /// A view for displaying beatmap listing details.
 #[derive(Default)]
@@ -84,9 +86,8 @@ impl BeatmapListingView {
                     ui.label(beatmap_listing.player_name.clone().unwrap_or_default());
                     ui.end_row();
 
-                    // TODO: Formatting for flag sets like this
                     ui.label("User Permissions");
-                    ui.label(format!("{:?}", beatmap_listing.user_permissions));
+                    ui.label(flagset_string(beatmap_listing.user_permissions));
                     ui.end_row();
                 });
 

@@ -47,7 +47,6 @@ impl ReplaysView {
 
     /// Gets the title for a particular replay.
     fn get_replay_title(replay: &ScoreReplay, beatmaps: &HashMap<String, BeatmapEntry>) -> String {
-        // TODO: Find a way to include accuracy + mods?
         if let Some(beatmap) = replay
             .beatmap_md5
             .as_ref()

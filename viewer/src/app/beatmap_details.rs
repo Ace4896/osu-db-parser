@@ -1,7 +1,7 @@
 use egui::{Id, RichText};
 use osu_db_parser::prelude::*;
 
-use super::{maybe_signed_u32, optional_string};
+use super::{maybe_signed_u32, mods_string, optional_string};
 
 /// A window for displaying beatmap details.
 pub struct BeatmapDetailsWindow {
@@ -301,7 +301,7 @@ impl BeatmapDetailsWindow {
                 .show(ui, |ui| {
                     egui::Grid::new(grid_id).show(ui, |ui| {
                         for star_rating in ratings {
-                            ui.label(format!("{:?}", star_rating.mods));
+                            ui.label(mods_string(star_rating.mods));
                             ui.label(format!("{:.02}", star_rating.rating));
                             ui.end_row();
                         }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use egui::Id;
-use osu_db_parser::prelude::*;
+use osu_db_parser::{flagset, prelude::*};
 
 use crate::widgets::file_dialog::FileDialog;
 
@@ -220,6 +220,24 @@ impl MainApp {
                 ui.selectable_value(&mut self.current_view, ViewType::Replays, "Replays");
             });
         });
+    }
+}
+
+/// Renders a flagset as a more readable string.
+fn flagset_string<F: flagset::Flags>(flags: flagset::FlagSet<F>) -> String {
+    flags
+        .into_iter()
+        .map(|f| format!("{:?}", f))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// Renders a mods flagset as a more readable string.
+fn mods_string(mods: flagset::FlagSet<Mods>) -> String {
+    if mods.is_empty() {
+        "NoMod".to_string()
+    } else {
+        flagset_string(mods)
     }
 }
 

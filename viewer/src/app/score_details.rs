@@ -1,7 +1,7 @@
 use egui::Id;
 use osu_db_parser::prelude::*;
 
-use super::{maybe_signed_u64, optional_string};
+use super::{maybe_signed_u64, mods_string, optional_string};
 
 /// A window for displaying score details.
 pub struct ScoreDetailsWindow {
@@ -76,7 +76,7 @@ impl ScoreDetailsWindow {
                     ui.end_row();
 
                     ui.label("Mods");
-                    ui.label(format!("{:?}", self.data.mods));
+                    ui.label(mods_string(self.data.mods));
                     ui.end_row();
 
                     ui.label("Lifebar Graph");
