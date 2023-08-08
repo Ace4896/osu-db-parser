@@ -242,7 +242,27 @@ fn open_beatmap_in_browser(beatmap: &BeatmapEntry) {
     );
 
     if let Err(e) = webbrowser::open(&url) {
-        log::error!("Unable to open {}: {}", &url, e);
+        log::error!("Unable to open beatmap link '{}': {}", &url, e);
+    }
+}
+
+/// Opens a score details link in the browser.
+fn open_score_in_browser(score: &ScoreReplay) {
+    // Fields to populate are:
+    // - Gameplay Mode - osu, taiko, fruits, mania
+    // - Online Score ID
+    let url = format!("https://osu.ppy.sh/scores/{}/{}",
+        match score.gameplay_mode {
+            GameplayMode::Standard => "osu",
+            GameplayMode::Taiko => "taiko",
+            GameplayMode::Catch => "fruits",
+            GameplayMode::Mania => "mania",
+        },
+        score.online_score_id
+    );
+
+    if let Err(e) = webbrowser::open(&url) {
+        log::error!("Unable to open score link '{}': {}", &url, e);
     }
 }
 

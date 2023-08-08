@@ -1,7 +1,7 @@
 use egui::Id;
 use osu_db_parser::prelude::*;
 
-use super::{maybe_signed_u64, mods_string, optional_string};
+use super::{maybe_signed_u64, mods_string, optional_string, open_score_in_browser};
 
 /// A window for displaying score details.
 pub struct ScoreDetailsWindow {
@@ -18,6 +18,12 @@ impl ScoreDetailsWindow {
             .id(self.id)
             .open(&mut self.visible)
             .show(ctx, |ui| {
+                ui.add_enabled_ui(self.data.online_score_id != 0, |ui| {
+                    if ui.link("View Score Online").clicked() {
+                        open_score_in_browser(&self.data);
+                    }
+                });
+
                 egui::Grid::new(self.id.with("grid")).show(ui, |ui| {
                     ui.label("Gameplay Mode");
                     ui.label(self.data.gameplay_mode.to_string());
