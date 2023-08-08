@@ -165,6 +165,56 @@ impl ScoreReplay {
         let data = std::fs::read(path)?;
         Self::from_bytes(&data)
     }
+
+    /// Calculates the accuracy percentage for this score/replay, using the formulae from the [osu! wiki](https://osu.ppy.sh/wiki/en/Gameplay/Accuracy).
+    pub fn accuracy(&self) -> f64 {
+        let accuracy = match self.gameplay_mode {
+            GameplayMode::Standard => {
+                (300.0 * self.hits_300 as f64
+                    + 100.0 * self.hits_100 as f64
+                    + 50.0 * self.hits_50 as f64)
+                    / (300.0 * (self.hits_300 + self.hits_100 + self.hits_50 + self.misses) as f64)
+            }
+            // Taiko only has Great/Good/Miss; hits_50 in the replay data isn't used
+            GameplayMode::Taiko => {
+                (self.hits_300 as f64 + 0.5 * self.hits_100 as f64)
+                    / (self.hits_300 + self.hits_100 + self.misses) as f64
+            }
+            // For Catch:
+            // - 300 = Caught Fruit
+            // - 100 = Caught Drops
+            // - 50 = Caught Droplets
+            // - Miss = Missed Fruits + Drops
+            // - Katu = Missed Droplets
+            GameplayMode::Catch => {
+                (self.hits_300 + self.hits_100 + self.hits_50) as f64
+                    / (self.hits_300 + self.hits_100 + self.hits_50 + self.misses + self.hits_katu)
+                        as f64
+            }
+            // For Mania:
+            // - Geki = Rainbow 300
+            // - Katu = 200
+            GameplayMode::Mania => {
+                let hits_300_or_below = 300.0 * self.hits_300 as f64
+                    + 200.0 * self.hits_katu as f64
+                    + 100.0 * self.hits_100 as f64
+                    + 50.0 * self.hits_50 as f64;
+                let total =
+                    (self.hits_geki + self.hits_300 + self.hits_100 + self.hits_50 + self.misses)
+                        as f64;
+
+                // Rainbow 300s have different weighting for ScoreV1/2
+                // ScoreV1 uses 300, ScoreV2 = 305
+                if self.mods.contains(Mods::ScoreV2) {
+                    (300.0 * self.hits_geki as f64 + hits_300_or_below) / (300.0 * total)
+                } else {
+                    (305.0 * self.hits_geki as f64 + hits_300_or_below) / (305.0 * total)
+                }
+            }
+        };
+
+        accuracy * 100.0
+    }
 }
 
 /// Parses a `scores.db` file.

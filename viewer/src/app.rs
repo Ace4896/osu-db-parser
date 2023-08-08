@@ -268,12 +268,12 @@ fn leaderboard(
                 let details = &scores[i];
                 if let Some(replay_md5) = &details.replay_md5 {
                     // TODO: Mod combination
-                    // TODO: Accuracy isn't stored in the replay - seems to be calculated from the number of hits
                     let label = format!(
-                        "{}: {} - {}",
+                        "{}: {} - {} {:.02}%",
                         i + 1,
                         details.player_name.clone().unwrap_or_default(),
-                        details.score
+                        details.score,
+                        details.accuracy()
                     );
 
                     if ui.selectable_label(false, &label).clicked() {
