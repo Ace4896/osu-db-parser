@@ -14,7 +14,9 @@ use nom::{
 use time::OffsetDateTime;
 
 use crate::{
-    common::{boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, Mods, OsuString},
+    common::{
+        boolean, gameplay_mode, osu_string, windows_datetime, GameplayMode, Grade, Mods, OsuString,
+    },
     error::Error,
 };
 
@@ -228,20 +230,6 @@ pub enum RankedStatus {
     Loved = 7,
 }
 
-/// Represents a grade achieved on a beatmap.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Grade {
-    SilverSS = 0,
-    SilverS = 1,
-    SS = 2,
-    S = 3,
-    A = 4,
-    B = 5,
-    C = 6,
-    D = 7,
-    Unplayed = 9,
-}
-
 /// Represents a star rating calculation for a particular mod combination.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StarRating {
@@ -289,24 +277,6 @@ impl std::fmt::Display for RankedStatus {
             Approved => write!(f, "Approved"),
             Qualified => write!(f, "Qualified"),
             Loved => write!(f, "Loved"),
-        }
-    }
-}
-
-impl std::fmt::Display for Grade {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Grade::*;
-
-        match self {
-            SilverSS => write!(f, "SS+"),
-            SilverS => write!(f, "S+"),
-            SS => write!(f, "SS"),
-            S => write!(f, "S"),
-            A => write!(f, "A"),
-            B => write!(f, "B"),
-            C => write!(f, "C"),
-            D => write!(f, "D"),
-            Unplayed => write!(f, "Unplayed"),
         }
     }
 }

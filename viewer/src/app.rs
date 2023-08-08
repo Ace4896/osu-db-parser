@@ -269,9 +269,10 @@ fn leaderboard(
                 if let Some(replay_md5) = &details.replay_md5 {
                     // TODO: Mod combination
                     let label = format!(
-                        "({}) {}: {} - {} {:.02}%",
+                        "({}) {}: {} - {} - {} {:.02}%",
                         details.gameplay_mode,
                         i + 1,
+                        details.grade(),
                         details.player_name.clone().unwrap_or_default(),
                         details.score,
                         details.accuracy()

@@ -22,7 +22,7 @@ use time::OffsetDateTime;
 
 use crate::{
     common::{
-        boolean, gameplay_mode, modifiers, osu_string, windows_datetime, GameplayMode, Mods,
+        boolean, gameplay_mode, modifiers, osu_string, windows_datetime, GameplayMode, Grade, Mods,
         OsuString,
     },
     error::Error,
@@ -214,6 +214,136 @@ impl ScoreReplay {
         };
 
         accuracy * 100.0
+    }
+
+    /// Determines the grade achieved for this replay, using the calculations from the [osu! wiki](https://osu.ppy.sh/wiki/en/Gameplay/Grade).
+    pub fn grade(&self) -> Grade {
+        // Determine the initial grade (before modifiers)
+        // TODO: I'm not sure if this can be relied on, but an alternative would be to check if we only have
+        let initial_grade = match self.gameplay_mode {
+            // Standard:
+            // - SS = 100% accuracy
+            // - S  = Over 90% 300s, at most 1% 50s, and no misses
+            // - A  = Over 80% 300s and no misses OR over 90% 300s
+            // - B  = Over 70% 300s and no misses OR over 80% 300s
+            // - C  = Over 60% 300s
+            // - D  = Anything else
+            GameplayMode::Standard => {
+                if self.hits_300 > 0 && self.hits_100 == 0 && self.hits_50 == 0 && self.misses == 0
+                {
+                    return Grade::SS;
+                }
+
+                let total_objects = self.hits_300 as f64
+                    + self.hits_100 as f64
+                    + self.hits_50 as f64
+                    + self.misses as f64;
+
+                let ratio_300 = self.hits_300 as f64 / total_objects;
+                let ratio_50 = self.hits_50 as f64 / total_objects;
+
+                match (ratio_300, ratio_50, self.misses) {
+                    (r_300, r_50, 0) if r_300 >= 0.9 && r_50 <= 0.01 => Grade::S,
+                    (r_300, _, m) if (r_300 >= 0.8 && m == 0) || (r_300 >= 0.9) => Grade::A,
+                    (r_300, _, m) if (r_300 >= 0.7 && m == 0) || (r_300 >= 0.8) => Grade::B,
+                    (r_300, _, _) if r_300 >= 0.6 => Grade::C,
+                    _ => Grade::D,
+                }
+            }
+
+            // Taiko:
+            // - SS = 100% accuracy
+            // - S  = Over 90% GREATs and no misses
+            // - A  = Over 80% GREATs and no misses OR over 90% GREATs
+            // - B  = Over 70% GREATs and no misses OR over 80% GREATs
+            // - C  = Over 60% GREATs
+            // - D  = Any other passing score
+            GameplayMode::Taiko => {
+                if self.hits_300 > 0 && self.hits_100 == 0 && self.misses == 0 {
+                    return Grade::SS;
+                }
+
+                let total_objects =
+                    self.hits_300 as f64 + self.hits_100 as f64 + self.misses as f64;
+
+                let ratio_great = self.hits_300 as f64 / total_objects;
+
+                match (ratio_great, self.misses) {
+                    (r_great, m) if r_great >= 0.9 && m == 0 => Grade::S,
+                    (r_great, m) if (r_great >= 0.8 && m == 0) || r_great >= 0.9 => Grade::A,
+                    (r_great, m) if (r_great >= 0.7 && m == 0) || r_great >= 0.8 => Grade::B,
+                    (r_great, _) if r_great >= 0.6 => Grade::C,
+                    _ => Grade::D,
+                }
+            }
+
+            // Catch:
+            // - SS = 100% accuracy
+            // - S  = 98.01% to 99.99% accuracy (an S rank is possible even with several misses, like in osu!mania)
+            // - A  = 94.01% to 98.00% accuracy
+            // - B  = 90.01% to 94.00% accuracy
+            // - C  = 85.01% to 90.00% accuracy
+            // - D  = Any other accuracy under 85.00%
+            GameplayMode::Catch => {
+                // If there are no missed fruits, drops or droplets, then should be an SS
+                if self.misses == 0 && self.hits_katu == 0 {
+                    return Grade::SS;
+                }
+
+                match self.accuracy() {
+                    a if a > 98.0 => Grade::S,
+                    a if a > 94.0 => Grade::A,
+                    a if a > 90.0 => Grade::B,
+                    a if a > 85.0 => Grade::C,
+                    _ => Grade::D,
+                }
+            }
+
+            // Mania:
+            // - SS = 100% accuracy
+            // - S  = Over 95% accuracy (an S rank is possible even with several misses, like in osu!catch)
+            // - A  = Over 90% accuracy
+            // - B  = Over 80% accuracy
+            // - C  = Over 70% accuracy
+            // - D  = Anything else
+            GameplayMode::Mania => {
+                // Accuracy differs between ScoreV1 and ScoreV2
+                // In ScoreV1, scores with only rainbow 300s + 300s are considered SS
+                // In ScoreV2, scores with only rainbow 300s are considered SS
+                if self.hits_100 == 0
+                    && self.hits_50 == 0
+                    && self.hits_katu == 0
+                    && self.misses == 0
+                    && ((self.mods.contains(Mods::ScoreV2)
+                        && self.hits_geki > 0
+                        && self.hits_300 == 0)
+                        || (!self.mods.contains(Mods::ScoreV2) && self.hits_geki > 0
+                            || self.hits_300 > 0))
+                {
+                    return Grade::SS;
+                }
+
+                match self.accuracy() {
+                    a if a >= 95.0 => Grade::S,
+                    a if a >= 90.0 => Grade::A,
+                    a if a >= 80.0 => Grade::B,
+                    a if a >= 70.0 => Grade::C,
+                    _ => Grade::D,
+                }
+            }
+        };
+
+        // See if this needs to be converted to a silver SS or silver S rank
+        // This is needed when Hidden, Flashlight or Fade In are present
+        let contains_silver_mod = self.mods.contains(Mods::Hidden)
+            || self.mods.contains(Mods::Flashlight)
+            || self.mods.contains(Mods::FadeIn);
+
+        match (initial_grade, contains_silver_mod) {
+            (Grade::SS, true) => Grade::SilverSS,
+            (Grade::S, true) => Grade::SilverS,
+            (g, _) => g,
+        }
     }
 }
 

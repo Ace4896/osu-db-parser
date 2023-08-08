@@ -18,6 +18,20 @@ pub enum GameplayMode {
     Mania = 3,
 }
 
+/// Represents a grade achieved on a beatmap.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Grade {
+    SilverSS = 0,
+    SilverS = 1,
+    SS = 2,
+    S = 3,
+    A = 4,
+    B = 5,
+    C = 6,
+    D = 7,
+    Unplayed = 9,
+}
+
 flags! {
     /// Represents a combination of gameplay modifiers.
     pub enum Mods: u32 {
@@ -65,6 +79,24 @@ impl std::fmt::Display for GameplayMode {
             Taiko => write!(f, "Taiko"),
             Catch => write!(f, "Catch"),
             Mania => write!(f, "Mania"),
+        }
+    }
+}
+
+impl std::fmt::Display for Grade {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Grade::*;
+
+        match self {
+            SilverSS => write!(f, "SS+"),
+            SilverS => write!(f, "S+"),
+            SS => write!(f, "SS"),
+            S => write!(f, "S"),
+            A => write!(f, "A"),
+            B => write!(f, "B"),
+            C => write!(f, "C"),
+            D => write!(f, "D"),
+            Unplayed => write!(f, "Unplayed"),
         }
     }
 }
