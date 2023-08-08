@@ -1,4 +1,4 @@
-use egui::Id;
+use egui::{Id, RichText};
 use osu_db_parser::prelude::*;
 
 use super::{maybe_signed_u32, optional_string};
@@ -102,7 +102,37 @@ impl BeatmapDetailsWindow {
                             ui.label(format!("{:.2}", self.data.slider_velocity));
                             ui.end_row();
 
-                            // TODO: Star ratings
+                            Self::star_ratings(
+                                self.id,
+                                ui,
+                                "Star Ratings (Standard)",
+                                &self.data.star_ratings_std,
+                            );
+                            ui.end_row();
+
+                            Self::star_ratings(
+                                self.id,
+                                ui,
+                                "Star Ratings (Taiko)",
+                                &self.data.star_ratings_taiko,
+                            );
+                            ui.end_row();
+
+                            Self::star_ratings(
+                                self.id,
+                                ui,
+                                "Star Ratings (Catch)",
+                                &self.data.star_ratings_ctb,
+                            );
+                            ui.end_row();
+
+                            Self::star_ratings(
+                                self.id,
+                                ui,
+                                "Star Ratings (Mania)",
+                                &self.data.star_ratings_mania,
+                            );
+                            ui.end_row();
 
                             ui.label("Drain Time");
                             ui.label(format!("{} s", self.data.drain_time));
@@ -224,5 +254,28 @@ impl BeatmapDetailsWindow {
                         })
                     });
             });
+    }
+
+    fn star_ratings(id: Id, ui: &mut egui::Ui, label: &str, ratings: &Option<Vec<StarRating>>) {
+        ui.label(label);
+
+        let header_id = id.with(label).with("header");
+        let grid_id = id.with(label).with("grid");
+
+        if let Some(ratings) = ratings.as_ref().filter(|r| !r.is_empty()) {
+            egui::CollapsingHeader::new("Ratings")
+                .id_source(header_id)
+                .show(ui, |ui| {
+                    egui::Grid::new(grid_id).show(ui, |ui| {
+                        for star_rating in ratings {
+                            ui.label(format!("{:?}", star_rating.mods));
+                            ui.label(format!("{:.02}", star_rating.rating));
+                            ui.end_row();
+                        }
+                    });
+                });
+        } else {
+            ui.label(RichText::new("N/A").italics());
+        }
     }
 }

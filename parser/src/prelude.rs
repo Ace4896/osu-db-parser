@@ -1,5 +1,5 @@
 pub use {
-    crate::beatmaps::{BeatmapEntry, BeatmapListing, RankedStatus, TimingPoint},
+    crate::beatmaps::{BeatmapEntry, BeatmapListing, RankedStatus, StarRating, TimingPoint},
     crate::collections::{Collection, CollectionListing},
     crate::common::{GameplayMode, Mods, OsuString},
     crate::error::Error,
