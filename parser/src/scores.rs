@@ -10,10 +10,12 @@ use std::path::Path;
 
 use flagset::FlagSet;
 use nom::{
-    bytes::complete::take,
-    combinator::{cond, map},
-    multi::length_count,
-    number::complete::{le_f64, le_u16, le_u32, le_u64},
+    bytes::complete::{tag, take},
+    character::complete::digit1,
+    combinator::{cond, map, map_res},
+    multi::{length_count, many0},
+    number::complete::{float, le_f64, le_u16, le_u32, le_u64},
+    sequence::{separated_pair, terminated},
     IResult,
 };
 use time::OffsetDateTime;
@@ -98,7 +100,7 @@ pub struct ScoreReplay {
 
     /// Life bar graph (see [replay format details](https://osu.ppy.sh/wiki/en/Client/File_formats/osr_%28file_format%29#format)).
     /// Only present when parsing a `.osr` replay file.
-    pub lifebar_graph: OsuString,
+    pub lifebar_graph: Option<LifebarGraph>,
 
     /// Timestamp of replay
     pub timestamp: OffsetDateTime,
@@ -114,6 +116,27 @@ pub struct ScoreReplay {
     /// When target practice is enabled, this is the total accuracy of all hits.
     /// Divide this by the number of targets in the map to find the accuracy displayed in-game.
     pub additional_mod_info: Option<f64>,
+}
+
+/// Represents the lifebar graph in a .osr replay file.
+#[derive(Clone, Debug, PartialEq)]
+pub struct LifebarGraph {
+    pub points: Vec<(u32, f32)>,
+}
+
+impl std::fmt::Display for LifebarGraph {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Each point is represented as a 'time|hp' pair, where each pair is comma separated
+        // There should also be a trailing comma at the end of the string
+        write!(
+            f,
+            "{}",
+            self.points
+                .iter()
+                .map(|(t, h)| format!("{}|{},", t, h))
+                .collect::<String>()
+        )
+    }
 }
 
 impl ScoreListing {
@@ -166,6 +189,30 @@ fn beatmap_scores(input: &[u8]) -> IResult<&[u8], BeatmapScores> {
     Ok((i, BeatmapScores { md5, scores }))
 }
 
+fn lifebar_graph(input: &[u8]) -> IResult<&[u8], Option<LifebarGraph>> {
+    // The lifebar graph is stored as a string, so parse this first
+    let (i, lifebar) = osu_string(input)?;
+
+    if let Some(lifebar) = lifebar {
+        // Then, parse the string values
+        let points = lifebar_graph_points(&lifebar)
+            .map(|(_, p)| p)
+            .map_err(|e| e.map_input(|_| i))?;
+
+        Ok((i, Some(LifebarGraph { points })))
+    } else {
+        Ok((i, None))
+    }
+}
+
+/// Parses the 'time|hp' points within a lifebar graph string.
+fn lifebar_graph_points(input: &str) -> IResult<&str, Vec<(u32, f32)>> {
+    many0(terminated(
+        separated_pair(map_res(digit1, |s: &str| s.parse::<u32>()), tag("|"), float),
+        tag(","),
+    ))(input)
+}
+
 /// Parses a score in the `scores.db` file or a `.osr` replay file.
 fn score_replay(input: &[u8]) -> IResult<&[u8], ScoreReplay> {
     let (i, gameplay_mode) = gameplay_mode(input)?;
@@ -184,7 +231,7 @@ fn score_replay(input: &[u8]) -> IResult<&[u8], ScoreReplay> {
     let (i, max_combo) = le_u16(i)?;
     let (i, is_perfect_combo) = boolean(i)?;
     let (i, mods) = modifiers(i)?;
-    let (i, lifebar_graph) = osu_string(i)?;
+    let (i, lifebar_graph) = lifebar_graph(i)?;
     let (i, timestamp) = windows_datetime(i)?;
 
     // If replay data length is 0xFFFFFFFF (-1), then no replay data is present (e.g. comes from scores.db)
@@ -224,4 +271,67 @@ fn score_replay(input: &[u8]) -> IResult<&[u8], ScoreReplay> {
             additional_mod_info,
         },
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lifebar_graph_parses_correctly() {
+        let empty_bytes = vec![0x00];
+        let zero_bytes = vec![0x0b, 0x00];
+
+        let non_empty = "1676|1,3732|1,5805|1,7847|1,9909|1,";
+        let mut non_empty_bytes = vec![0x0b, non_empty.len() as u8];
+        non_empty_bytes.extend_from_slice(non_empty.as_bytes());
+
+        // Sanity check to ensure that string is formatted correctly
+        assert_eq!(
+            Ok((
+                &[][..],
+                Some("1676|1,3732|1,5805|1,7847|1,9909|1,".to_string())
+            )),
+            osu_string(&non_empty_bytes)
+        );
+
+        // Parsing the empty and zero-length strings
+        assert_eq!(Ok((&[][..], None)), lifebar_graph(&empty_bytes));
+        assert_eq!(
+            Ok((&[][..], Some(LifebarGraph { points: Vec::new() }))),
+            lifebar_graph(&zero_bytes)
+        );
+
+        // Parsing the non-empty string
+        assert_eq!(
+            Ok((
+                &[][..],
+                Some(LifebarGraph {
+                    points: vec![
+                        (1676, 1.0),
+                        (3732, 1.0),
+                        (5805, 1.0),
+                        (7847, 1.0),
+                        (9909, 1.0),
+                    ],
+                })
+            )),
+            lifebar_graph(&non_empty_bytes)
+        );
+    }
+
+    #[test]
+    fn lifebar_graph_display_is_correct() {
+        let graph = LifebarGraph {
+            points: vec![
+                (1676, 1.0),
+                (3732, 1.0),
+                (5805, 1.0),
+                (7847, 1.0),
+                (9909, 1.0),
+            ],
+        };
+
+        assert_eq!("1676|1,3732|1,5805|1,7847|1,9909|1,", graph.to_string());
+    }
 }
