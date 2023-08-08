@@ -36,8 +36,7 @@ cargo run --release     # Release
 
 # Build and serve the app for WASM
 # The compiled output can be found in ./viewer/dist
-# It can be viewed at http://127.0.0.1:8080
-# NOTE: The output is cached; after rebuilding, either force refresh or use http://127.0.0.1:8080#dev
+# The app can be viewed at http://127.0.0.1:8080
 trunk serve ./viewer/index.html             # Debug
 trunk serve --release ./viewer/index.html   # Release
 ```
