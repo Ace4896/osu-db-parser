@@ -219,7 +219,6 @@ impl ScoreReplay {
     /// Determines the grade achieved for this replay, using the calculations from the [osu! wiki](https://osu.ppy.sh/wiki/en/Gameplay/Grade).
     pub fn grade(&self) -> Grade {
         // Determine the initial grade (before modifiers)
-        // TODO: I'm not sure if this can be relied on, but an alternative would be to check if we only have
         let initial_grade = match self.gameplay_mode {
             // Standard:
             // - SS = 100% accuracy
