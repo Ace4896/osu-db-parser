@@ -79,12 +79,41 @@ impl ScoreDetailsWindow {
                     ui.label(format!("{:?}", self.data.mods));
                     ui.end_row();
 
-                    // TODO: Lifebar graph - needs a dedicated renderer
-                    // It's stored as comma-separated key-value pairs:
-                    // - Key is the timestamp in milliseconds
-                    // - Value is the life value - range is [0, 1], where 1 indicates full health
-                    //
-                    // Probably need something similar to egui's plotting, most likely need to adjust the parsed model
+                    ui.label("Lifebar Graph");
+
+                    if let Some(lifebar) = &self.data.lifebar_graph {
+                        use egui::{
+                            plot::{Line, PlotPoints},
+                            Color32,
+                        };
+
+                        let plot_points = lifebar
+                            .points
+                            .iter()
+                            .map(|(t, h)| [f64::from(*t), f64::from(*h)])
+                            .collect::<PlotPoints>();
+
+                        let line = Line::new(plot_points).color(Color32::WHITE).width(2.0);
+
+                        egui::plot::Plot::new(self.id.with("lifebar_plot"))
+                            .allow_drag(false)
+                            .allow_scroll(false)
+                            .allow_zoom(false)
+                            .allow_boxed_zoom(false)
+                            .show_axes([false, false])
+                            .show_x(false)
+                            .show_y(false)
+                            .include_x(0.0)
+                            .include_y(0.0)
+                            .include_y(1.0)
+                            .auto_bounds_x()
+                            .auto_bounds_y()
+                            .show(ui, |plot_ui| plot_ui.line(line));
+                    } else {
+                        ui.label(egui::RichText::new("N/A").italics());
+                    }
+
+                    ui.end_row();
 
                     ui.label("Timestamp");
                     ui.label(self.data.timestamp.to_string());
