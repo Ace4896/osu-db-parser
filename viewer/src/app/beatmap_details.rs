@@ -146,7 +146,40 @@ impl BeatmapDetailsWindow {
                             ui.label(format!("{} ms", self.data.audio_preview_time));
                             ui.end_row();
 
-                            // TODO: Timing points
+                            ui.label("Timing Points");
+
+                            if self.data.timing_points.is_empty() {
+                                ui.label(RichText::new("N/A").italics());
+                            } else {
+                                egui::CollapsingHeader::new(format!(
+                                    "{} Timing Points",
+                                    self.data.timing_points.len()
+                                ))
+                                .id_source(self.id.with("timing_points"))
+                                .show(ui, |ui| {
+                                    egui::Grid::new(self.id.with("timing_points_grid")).show(
+                                        ui,
+                                        |ui| {
+                                            ui.label("BPM");
+                                            ui.label("Offset / ms");
+                                            ui.label("Inherited?");
+                                            ui.end_row();
+
+                                            for timing_point in &self.data.timing_points {
+                                                ui.label(format!("{:.2}", timing_point.bpm));
+                                                ui.label(format!(
+                                                    "{:.2}",
+                                                    timing_point.song_offset
+                                                ));
+                                                ui.label(timing_point.inherited.to_string());
+                                                ui.end_row();
+                                            }
+                                        },
+                                    );
+                                });
+                            }
+
+                            ui.end_row();
 
                             ui.label("Difficulty ID");
                             ui.label(maybe_signed_u32(self.data.difficulty_id));
