@@ -1,0 +1,65 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy Iced application to GitHub pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["master"]
+    paths:
+      - '.github/workflows/static.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - '.cargo/*'
+      - 'parser/*'
+      - 'viewer/*'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+      - name: Setup Rust Cache  # Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v1
+      - name: Download Trunk
+        run: wget -qO- https://github.com/thedodd/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+      - name: Build
+        # "${GITHUB_REPOSITORY#*/}" evaluates into the name of the repository
+        # using --public-url something will allow trunk to modify all the href paths like from favicon.ico to repo_name/favicon.ico .
+        # this is necessary for github pages where the site is deployed to username.github.io/repo_name and all files must be requested
+        run: ./trunk build --release --public-url "${GITHUB_REPOSITORY#*/}" ./viewer/index.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: './viewer/dist'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
