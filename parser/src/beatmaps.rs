@@ -280,7 +280,7 @@ flags! {
 impl std::fmt::Display for RankedStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use RankedStatus::*;
-        
+
         match self {
             Unknown => write!(f, "Unknown"),
             Unsubmitted => write!(f, "Unsubmitted"),
