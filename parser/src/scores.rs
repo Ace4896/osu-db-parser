@@ -175,11 +175,13 @@ impl ScoreReplay {
                     + 50.0 * self.hits_50 as f64)
                     / (300.0 * (self.hits_300 + self.hits_100 + self.hits_50 + self.misses) as f64)
             }
+
             // Taiko only has Great/Good/Miss; hits_50 in the replay data isn't used
             GameplayMode::Taiko => {
                 (self.hits_300 as f64 + 0.5 * self.hits_100 as f64)
                     / (self.hits_300 + self.hits_100 + self.misses) as f64
             }
+
             // For Catch:
             // - 300 = Caught Fruit
             // - 100 = Caught Drops
@@ -191,6 +193,7 @@ impl ScoreReplay {
                     / (self.hits_300 + self.hits_100 + self.hits_50 + self.misses + self.hits_katu)
                         as f64
             }
+
             // For Mania:
             // - Geki = Rainbow 300
             // - Katu = 200
@@ -204,7 +207,7 @@ impl ScoreReplay {
                         as f64;
 
                 // Rainbow 300s have different weighting for ScoreV1/2
-                // ScoreV1 uses 300, ScoreV2 = 305
+                // ScoreV1 uses 300, ScoreV2 uses 305
                 if self.mods.contains(Mods::ScoreV2) {
                     (300.0 * self.hits_geki as f64 + hits_300_or_below) / (300.0 * total)
                 } else {
