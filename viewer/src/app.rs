@@ -198,7 +198,7 @@ impl MainApp {
                         ui.separator();
 
                         if ui.button("Close").clicked() {
-                            _frame.close();
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                     }
                 });

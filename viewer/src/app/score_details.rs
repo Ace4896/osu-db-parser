@@ -88,10 +88,8 @@ impl ScoreDetailsWindow {
                     ui.label("Lifebar Graph");
 
                     if let Some(lifebar) = &self.data.lifebar_graph {
-                        use egui::{
-                            plot::{Line, PlotPoints},
-                            Color32,
-                        };
+                        use egui::Color32;
+                        use egui_plot::{Line, PlotPoints};
 
                         let plot_points = lifebar
                             .points
@@ -101,7 +99,7 @@ impl ScoreDetailsWindow {
 
                         let line = Line::new(plot_points).color(Color32::WHITE).width(2.0);
 
-                        egui::plot::Plot::new(self.id.with("lifebar_plot"))
+                        egui_plot::Plot::new(self.id.with("lifebar_plot"))
                             .allow_drag(false)
                             .allow_scroll(false)
                             .allow_zoom(false)
