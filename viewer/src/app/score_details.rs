@@ -110,8 +110,6 @@ impl ScoreDetailsWindow {
                             .include_x(0.0)
                             .include_y(0.0)
                             .include_y(1.0)
-                            .auto_bounds_x()
-                            .auto_bounds_y()
                             .show(ui, |plot_ui| plot_ui.line(line));
                     } else {
                         ui.label(egui::RichText::new("N/A").italics());
