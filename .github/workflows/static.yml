@@ -45,7 +45,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Download Trunk
-        run: wget -qO- https://github.com/thedodd/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+        run: wget -qO- https://github.com/thedodd/trunk/releases/0.20.1/download/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
 
       - name: Build
         # "${GITHUB_REPOSITORY#*/}" evaluates into the name of the repository
