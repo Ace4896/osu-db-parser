@@ -7,11 +7,10 @@ mod widgets;
 fn main() -> eframe::Result<()> {
     env_logger::init();
 
-    let native_options = eframe::NativeOptions::default();
     eframe::run_native(
         "osu! Database Viewer",
-        native_options,
-        Box::new(|_| Box::new(app::MainApp::default())),
+        eframe::NativeOptions::default(),
+        Box::new(|_| Ok(Box::new(app::MainApp::default()))),
     )
 }
 
@@ -25,8 +24,8 @@ fn main() {
         eframe::WebRunner::new()
             .start(
                 "appCanvas",
-                web_options,
-                Box::new(|_| Box::new(app::MainApp::default())),
+                eframe::WebOptions::default(),
+                Box::new(|_| Ok(Box::new(app::MainApp::default()))),
             )
             .await
             .expect("failed to start eframe");

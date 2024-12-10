@@ -79,7 +79,7 @@ impl CollectionListingView {
                 });
 
                 // Available Collections
-                egui::ComboBox::from_id_source("available_collections")
+                egui::ComboBox::from_id_salt("available_collections")
                     .width(ui.available_width())
                     .selected_text(
                         self.selected_collection

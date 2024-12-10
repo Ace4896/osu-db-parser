@@ -159,7 +159,7 @@ impl BeatmapDetailsWindow {
                                     "{} Timing Points",
                                     self.data.timing_points.len()
                                 ))
-                                .id_source(self.id.with("timing_points"))
+                                .id_salt(self.id.with("timing_points"))
                                 .show(ui, |ui| {
                                     egui::Grid::new(self.id.with("timing_points_grid")).show(
                                         ui,
@@ -301,7 +301,7 @@ impl BeatmapDetailsWindow {
 
         if let Some(ratings) = ratings.as_ref().filter(|r| !r.is_empty()) {
             egui::CollapsingHeader::new(format!("{} Ratings", ratings.len()))
-                .id_source(header_id)
+                .id_salt(header_id)
                 .show(ui, |ui| {
                     egui::Grid::new(grid_id).show(ui, |ui| {
                         for star_rating in ratings {
