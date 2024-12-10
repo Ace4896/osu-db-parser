@@ -20,6 +20,8 @@ When building for WASM, a few extra things are also needed:
 - Add the WASM target: `rustup target add wasm32-unknown-unknown`
 - [Trunk](https://trunkrs.dev/)
 
+If you're using [Nix](https://nixos.org/), a [`shell.nix`](./shell.nix) environment is provided - just run `nix-shell` to quickly get started.
+
 # Development Usage
 
 The app is split into two crates:
