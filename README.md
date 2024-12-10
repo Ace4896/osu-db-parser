@@ -12,7 +12,7 @@ The formats for each database are described in more detail on the [osu! wiki](ht
 
 To run the app natively, the following needs to be setup:
 
-- Stable Rust (tested on 1.71.0)
+- Stable Rust (tested on 1.83.0)
 - [eframe Dependencies](https://github.com/emilk/eframe_template#testing-locally)
 
 When building for WASM, a few extra things are also needed:
